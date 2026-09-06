@@ -1,0 +1,140 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "Lexend";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("@assets/fonts/lexend-variable-latin.woff2") format("woff2-variations");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215;
+}
+
+@theme {
+  --color-bg: #F6F6F3;
+  --color-card: #FFFFFF;
+  --color-ink: #1A1D1A;
+  --color-ink-2: #4E554D;
+  --color-ink-3: #6C736B;
+  --color-line: #DFE1DA;
+  --color-field: #4C5A3E;
+  --color-field-soft: #7C8A68;
+
+  --font-sans: "Lexend", ui-sans-serif, system-ui, sans-serif;
+  --radius-card: 16px;
+}
+
+@layer base {
+  html, body { margin: 0; padding: 0; overflow-x: hidden; }
+
+  body {
+    background: var(--color-bg);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    padding-bottom: calc(40px + env(safe-area-inset-bottom));
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image: url('@assets/topo.webp');
+    background-size: cover;
+    background-position: center top;
+    background-repeat: no-repeat;
+    opacity: .15;
+    transform: translateZ(0);
+  }
+
+  button, a { -webkit-user-select: none; user-select: none; }
+  h1, h2, h3 { margin: 0; }
+}
+
+@theme {
+  --bank-accent: var(--color-ink);
+  --bank-soft: var(--color-ink-3);
+  --bank-bar: var(--color-ink);
+  --bank-tint: #EFEFEC;
+  --bank-radius: 16px;
+}
+
+[data-bank="mono"] {
+  --bank-accent: #111111;
+  --bank-soft: #3D3D3D;
+  --bank-bar: #111111;
+  --bank-tint: #EFEFEC;
+  --bank-radius: 20px;
+}
+
+[data-bank="privat"] {
+  --bank-accent: #2F6B14;
+  --bank-soft: #4E8C1E;
+  --bank-bar: #7BB643;
+  --bank-tint: #EDF5E3;
+  --bank-radius: 12px;
+}
+
+[data-bank="other"] {
+  --bank-accent: #37424E;
+  --bank-soft: #4E6579;
+  --bank-bar: #7C9BBF;
+  --bank-tint: #EBF1F7;
+  --bank-radius: 14px;
+}
+
+[data-bank="report"] {
+  --bank-accent: #3F4A34;
+  --bank-soft: #5F6E4C;
+  --bank-bar: #4C5A3E;
+  --bank-tint: #EFF1EA;
+  --bank-radius: 16px;
+}
+
+@layer components {
+  .surface {
+    background: var(--color-card);
+    border: 1px solid var(--color-line);
+    border-radius: var(--bank-radius);
+  }
+
+  .cta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 15px 18px;
+    border-radius: calc(var(--bank-radius) - 4px);
+    background: var(--bank-accent);
+    color: #fff;
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: -.01em;
+    box-shadow: 0 6px 18px -10px rgb(26 29 26 / .5);
+    transition: transform .15s, filter .15s;
+  }
+  .cta:active { transform: scale(.985); filter: brightness(.94); }
+
+  .tap { transition: transform .15s, background .15s, border-color .15s; }
+  .tap:active { transform: scale(.985); }
+
+  .num { font-variant-numeric: tabular-nums; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(7px); }
+  to { opacity: 1; transform: none; }
+}
