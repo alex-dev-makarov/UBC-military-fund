@@ -1,9 +1,9 @@
-import { useMemo } from 'react'
 import camo from '@assets/camo.svg'
 import { categoriesTotal, totalSpent } from '@entities/spend'
 import { LangSwitch } from '@features/switch-lang'
-import { fund } from '@shared/config'
+import { useFund } from '@entities/fund'
 import { useI18n, type Fmt, type Translate } from '@shared/i18n'
+import type { PublicFund } from '@shared/api'
 import { useCarousel } from '@shared/lib'
 
 interface Slide {
@@ -16,7 +16,12 @@ interface Slide {
   swatch?: string
 }
 
-function buildSlides(t: Translate, fmt: Fmt, pick: (loc: { uk: string; en: string }) => string) {
+function buildSlides(
+  fund: PublicFund,
+  t: Translate,
+  fmt: Fmt,
+  pick: (loc: { uk: string; en: string }) => string,
+) {
   const total = totalSpent(fund)
   const catTotal = categoriesTotal(fund)
   const count = fund.regions.length
@@ -53,7 +58,8 @@ function buildSlides(t: Translate, fmt: Fmt, pick: (loc: { uk: string; en: strin
 
 export function ReportDeck() {
   const { t, fmt, pick } = useI18n()
-  const slides = useMemo(() => buildSlides(t, fmt, pick), [t, fmt, pick])
+  const fund = useFund()
+  const slides = buildSlides(fund, t, fmt, pick)
   const { index, drag, select, handlers } = useCarousel({ count: slides.length })
 
   return (

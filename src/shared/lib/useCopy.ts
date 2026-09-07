@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import {useEffect, useRef, useState} from 'react'
 
 export function useCopy(value: string, resetAfter = 1800) {
   const [copied, setCopied] = useState(false)
@@ -6,7 +6,7 @@ export function useCopy(value: string, resetAfter = 1800) {
 
   useEffect(() => () => clearTimeout(timer.current), [])
 
-  const copy = useCallback(async () => {
+  const copy = async () => {
     const plain = value.replace(/\s+/g, '')
     try {
       await navigator.clipboard.writeText(plain)
@@ -23,7 +23,7 @@ export function useCopy(value: string, resetAfter = 1800) {
     setCopied(true)
     clearTimeout(timer.current)
     timer.current = setTimeout(() => setCopied(false), resetAfter)
-  }, [value, resetAfter])
+  }
 
   return { copied, copy }
 }

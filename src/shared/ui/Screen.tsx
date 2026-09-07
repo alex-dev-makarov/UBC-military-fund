@@ -15,14 +15,14 @@ export function Screen({ bank, children }: ScreenProps) {
   )
 }
 
-export function BackButton({ label }: { label?: string }) {
+export function BackButton({ label, to = '/' }: { label?: string; to?: string }) {
   const navigate = useNavigate()
   const t = useT()
 
   return (
     <button
       type="button"
-      onClick={() => navigate('/')}
+      onClick={() => navigate(to)}
       className="tap mb-3.5 inline-flex min-h-12 items-center gap-2.5 rounded-xl border border-line bg-card px-4 pl-3 text-[14.5px] font-bold text-ink active:bg-[var(--bank-tint)]"
     >
       <svg viewBox="0 0 24 24" className="size-5 shrink-0" fill="none" stroke="var(--bank-soft)" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">

@@ -74,6 +74,24 @@ export default defineConfig({
 
   server: {
     warmup: { clientFiles: ['./src/main.tsx', './src/app*.tsx', './src/pages*.tsx'] },
+    
+    
+    
+    
+    allowedHosts: ['.trycloudflare.com', '.ngrok-free.app', '.ngrok.io'],
+    
+    
+    
+    
+    
+    
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+    },
   },
 
   optimizeDeps: { include: ['react', 'react-dom/client'] },

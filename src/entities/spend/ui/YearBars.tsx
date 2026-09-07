@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { YearTotal } from '@shared/config'
+import type { YearTotal } from '@shared/api'
 import { useI18n } from '@shared/i18n'
 
 export function YearBars({ years }: { years: YearTotal[] }) {

@@ -75,7 +75,6 @@ const chips: ChipData[] = [
   },
 ]
 
-/** Static replica of the mono jar action row — the button to reach is off-screen. */
 export function MonoReplica() {
   const t = useT()
 

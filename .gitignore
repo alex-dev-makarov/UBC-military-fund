@@ -8,3 +8,8 @@ dist
 api/dist
 api/node_modules
 .jarvis
+
+api/data/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
