@@ -13,3 +13,8 @@ api/data/
 *.sqlite
 *.sqlite-wal
 *.sqlite-shm
+
+# macOS finder metadata and the TypeScript incremental build cache.
+# Both were committed by accident in the first commit; the rules keep them out.
+.DS_Store
+*.tsbuildinfo
