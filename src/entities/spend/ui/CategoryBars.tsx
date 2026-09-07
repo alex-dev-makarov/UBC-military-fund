@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { SpendCategory } from '@shared/config'
+import type { SpendCategory } from '@shared/api'
 import { useI18n } from '@shared/i18n'
 
 export function CategoryBars({ categories, total }: { categories: SpendCategory[]; total: number }) {

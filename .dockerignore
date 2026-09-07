@@ -1,0 +1,27 @@
+# The build context is the repo root (the API is a workspace package and needs
+# the root manifest + lockfile), so this file — not api/.dockerignore — is the
+# one Docker actually reads for `docker compose build`.
+.git
+.github
+node_modules
+**/node_modules
+dist
+**/dist
+.wrangler
+.jarvis
+docs
+public
+src
+api/data
+**/*.sqlite
+**/*.sqlite-wal
+**/*.sqlite-shm
+
+# Secrets are injected at runtime via env_file; they must never enter the
+# build context, where they would be readable in an image layer.
+.env
+.env.*
+api/.env
+api/.env.*
+!.env.example
+!api/.env.example

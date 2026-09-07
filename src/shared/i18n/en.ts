@@ -126,4 +126,56 @@ export const en: Dict = {
   'other.step2.p1': 'Frequency — monthly. You can cancel in the same place, at any time.',
   'other.foot':
     'Nothing like that in your bank? A one-time transfer helps a great deal too — *you can repeat it whenever it suits you*.',
+
+  'private.h': 'Private report',
+  'private.locked.title': 'For group members',
+  'private.locked.text':
+    'Delivery details — units, directions and suppliers — are open only to members of the private Telegram group. Sign in to see them.',
+  'private.checking': 'Checking access…',
+  'private.loading': 'Loading the report…',
+  'private.denied.title': 'No access',
+  'private.denied.text':
+    'This account is not in the private group. If you should be, message the coordinator and we’ll add you.',
+  'private.error.title': 'Could not connect',
+  'private.error.text':
+    'The private report is unavailable right now. The public part above is current.',
+  'private.retry': 'Try again',
+  'private.generated': 'Data as of {date}',
+  'private.reserve': 'jar balance',
+  'private.h.deliveries': 'Delivered to units',
+  'private.h.pending': 'In progress',
+  'private.h.suppliers': 'Suppliers',
+  'private.empty': 'Nothing here yet',
+
+  'fund.loading': 'Loading fund data…',
+  'fund.error.title': 'Could not load the data',
+  'fund.error.text':
+    'The fund data server is unavailable right now. Try refreshing in a minute.',
+  'fund.retry': 'Try again',
+
+  'private.deeplink.cta': 'Sign in with Telegram',
+  'private.deeplink.waiting':
+    'The bot chat is open. Press Start there and come back — this page updates on its own.',
+  'private.deeplink.reopen': 'Open the chat again',
+  'private.deeplink.cancel': 'Cancel',
+  'private.deeplink.expired': 'The link has expired.',
+  'private.deeplink.error': 'Could not reach the server.',
+
+  'secret.title': 'Private report',
+
+  'members.title': 'Report for church members',
+  'members.hint': 'Sign in with Telegram — takes a few seconds',
+  'members.hint.waiting': 'Telegram is open — press Start',
+  'members.reassure':
+    'We never see your phone number and we do not store your name — we only check that you are in the church group. You can leave at any time; access lasts 15 minutes.',
+  'secret.public.h': 'General report',
+  'secret.more.title': 'More to come',
+  'secret.more.text':
+    'Details we do not publish openly will appear here over time. For now the general report is available — it updates alongside the public one.',
+
+  'denied.title': 'For church members only',
+  'denied.text':
+    'Your account was not found in the church Telegram group, so the private report is unavailable. If you are a member, ask a coordinator to add you to the group and sign-in will work straight away.',
+  'denied.retry': 'Try a different account',
+  'denied.public': 'View the general report',
 }
