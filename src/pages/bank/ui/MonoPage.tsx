@@ -4,7 +4,7 @@ import stepNav from '@assets/step-nav.webp'
 import stepStar from '@assets/step-star.webp'
 import { MonoReplica } from '@widgets/mono-replica'
 import { BankMark, banks } from '@entities/bank'
-import { fund } from '@shared/config'
+import { useFund } from '@entities/fund'
 import { Rich, useT } from '@shared/i18n'
 import {
   BackButton,
@@ -29,6 +29,7 @@ const mono = banks[0]!
 export function MonoPage() {
   const [mode, setMode] = useState<Mode>('monthly')
   const t = useT()
+  const fund = useFund()
 
   return (
     <Screen bank="mono">

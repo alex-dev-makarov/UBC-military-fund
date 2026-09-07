@@ -1,0 +1,5 @@
+{
+  "extends": "./tsconfig.json",
+  "//": "Specs live beside the code they test but must never reach dist — this is the config `nest build` picks up by default (nest-cli.json leaves tsConfigPath at its default).",
+  "exclude": ["src/**/*.spec.ts", "vitest.config.ts", "node_modules", "dist"]
+}

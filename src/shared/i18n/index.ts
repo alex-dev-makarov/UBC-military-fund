@@ -1,4 +1,4 @@
-export { I18nProvider, useI18n, useT, useFmt, usePick, type Translate } from './context'
+export { I18nProvider, useI18n, useT, type Translate } from './context'
 export { Rich } from './Rich'
 export { makeFmt, type Fmt, type PluralKey } from './format'
 export { langs, locales, isLang, type Lang, type Loc } from './types'

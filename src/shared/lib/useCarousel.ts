@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import {useEffect, useRef, useState} from 'react'
 
 interface Options {
   count: number
@@ -14,10 +14,7 @@ export function useCarousel({ count, interval = 4200, threshold = 42 }: Options)
   const origin = useRef({ x: 0, y: 0 })
   const horizontal = useRef(false)
 
-  const go = useCallback(
-    (next: number) => setIndex((next + count) % count),
-    [count],
-  )
+  const go = (next: number) => setIndex((next + count) % count)
 
   useEffect(() => {
     if (held || count < 2) return
@@ -33,15 +30,15 @@ export function useCarousel({ count, interval = 4200, threshold = 42 }: Options)
     }
   }, [held, count, interval])
 
-  const onPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+  const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (!event.isPrimary || pointer.current !== null) return
     pointer.current = event.pointerId
     origin.current = { x: event.clientX, y: event.clientY }
     horizontal.current = false
     event.currentTarget.setPointerCapture(event.pointerId)
-  }, [])
+  }
 
-  const onPointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+  const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
     if (event.pointerId !== pointer.current) return
 
     const dx = event.clientX - origin.current.x
@@ -61,9 +58,9 @@ export function useCarousel({ count, interval = 4200, threshold = 42 }: Options)
     const atEdge =
       (index === 0 && dx > 0) || (index === count - 1 && dx < 0)
     setDrag(atEdge ? dx / 3 : dx)
-  }, [index, count])
+  }
 
-  const onPointerUp = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+  const onPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
     if (event.pointerId !== pointer.current && pointer.current !== null) return
 
     const moved = horizontal.current && Math.abs(drag) > threshold
@@ -72,15 +69,12 @@ export function useCarousel({ count, interval = 4200, threshold = 42 }: Options)
     pointer.current = null
     horizontal.current = false
     setDrag(0)
-  }, [drag, index, go, threshold])
+  }
 
-  const select = useCallback(
-    (next: number) => {
+  const select = (next: number) => {
       setHeld(true)
       go(next)
-    },
-    [go],
-  )
+    }
 
   return {
     index,

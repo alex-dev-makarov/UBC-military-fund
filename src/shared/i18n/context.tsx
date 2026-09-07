@@ -1,12 +1,4 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from 'react'
+import {createContext, useContext, useEffect, useState, type ReactNode} from 'react'
 import { makeFmt, type Fmt } from './format'
 import { isLang, locales, type Lang, type Loc } from './types'
 import { uk, type TKey } from './uk'
@@ -63,16 +55,20 @@ function detect(): Lang {
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>(detect)
 
-  const setLang = useCallback((next: Lang) => {
+  const setLang = (next: Lang) => {
     setLangState(next)
     remember(next)
-  }, [])
+  }
 
-  const value = useMemo<I18nValue>(() => {
-    const dict = dicts[lang]
-    const t: Translate = (key, vars) => fill(dict[key], vars)
-    return { lang, setLang, t, fmt: makeFmt(lang), pick: (loc) => loc[lang] }
-  }, [lang, setLang])
+  const dict = dicts[lang]
+  const t: Translate = (key, vars) => fill(dict[key], vars)
+  const value: I18nValue = {
+    lang,
+    setLang,
+    t,
+    fmt: makeFmt(lang),
+    pick: (loc: Loc) => loc[lang],
+  }
 
   useEffect(() => {
     const root = document.documentElement
@@ -97,5 +93,3 @@ export function useI18n() {
 }
 
 export const useT = () => useI18n().t
-export const useFmt = () => useI18n().fmt
-export const usePick = () => useI18n().pick

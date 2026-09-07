@@ -1,6 +1,6 @@
 import { BankMark, banks } from '@entities/bank'
 import { CopyCard } from '@features/copy-card'
-import { fund } from '@shared/config'
+import { useFund } from '@entities/fund'
 import { Rich, useT } from '@shared/i18n'
 import {
   BackButton,
@@ -18,6 +18,7 @@ const other = banks[2]!
 
 export function OtherPage() {
   const t = useT()
+  const fund = useFund()
 
   return (
     <Screen bank="other">

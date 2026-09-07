@@ -1,4 +1,4 @@
-import type { SpendItem } from '@shared/config'
+import type { SpendItem } from '@shared/api'
 import { useI18n } from '@shared/i18n'
 
 export function RecentList({ items }: { items: SpendItem[] }) {

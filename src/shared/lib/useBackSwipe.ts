@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import {useRef, useState} from 'react'
 
 export function useBackSwipe(onBack: () => void, enabled: boolean) {
   const [offset, setOffset] = useState(0)
@@ -6,15 +6,15 @@ export function useBackSwipe(onBack: () => void, enabled: boolean) {
   const origin = useRef<{ x: number; y: number } | null>(null)
   const horizontal = useRef(false)
 
-  const reset = useCallback((animate: boolean) => {
+  const reset = (animate: boolean) => {
     setSnapping(animate)
     setOffset(0)
     origin.current = null
     horizontal.current = false
     if (animate) setTimeout(() => setSnapping(false), 240)
-  }, [])
+  }
 
-  const onTouchStart = useCallback((event: React.TouchEvent) => {
+  const onTouchStart = (event: React.TouchEvent) => {
     if (!enabled || event.touches.length > 1) return
     const target = event.target as HTMLElement
     if (target.closest('[data-no-swipe]')) return
@@ -24,9 +24,9 @@ export function useBackSwipe(onBack: () => void, enabled: boolean) {
     origin.current = { x: touch.clientX, y: touch.clientY }
     horizontal.current = false
     setSnapping(false)
-  }, [enabled])
+  }
 
-  const onTouchMove = useCallback((event: React.TouchEvent) => {
+  const onTouchMove = (event: React.TouchEvent) => {
     if (!origin.current) return
     const touch = event.touches[0]
     if (!touch) return
@@ -44,16 +44,16 @@ export function useBackSwipe(onBack: () => void, enabled: boolean) {
     }
 
     setOffset(Math.min(dx * 0.45, 84))
-  }, [])
+  }
 
-  const onTouchEnd = useCallback((event: React.TouchEvent) => {
+  const onTouchEnd = (event: React.TouchEvent) => {
     if (!origin.current) return reset(false)
     const touch = event.changedTouches[0]
     const dx = touch ? touch.clientX - origin.current.x : 0
     const fired = horizontal.current && dx > 72
     reset(true)
     if (fired) onBack()
-  }, [onBack, reset])
+  }
 
   return {
     handlers: { onTouchStart, onTouchMove, onTouchEnd, onTouchCancel: () => reset(true) },

@@ -1,0 +1,36 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+
+    env_file: ./api/.env
+    environment:
+      DATABASE_PATH: /app/data/ubc.sqlite
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./api/data:/app/data
+
+    user: node
+    restart: unless-stopped
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token eyJhIjoiMTI5Y2VhOTE3YzU0YTE3MWI2Yzc4MjI1Y2U5ZTRiOGEiLCJ0IjoiYjVhOGFlM2ItMjBmZi00Yzk2LTgwMDgtZGVlNWEyYTRhM2E2IiwicyI6IlkyTXhOemsyWkdZdE9USmhNeTAwTlRObUxXRTRaR010TTJJd00yTTJOVFF4TldVdyJ9
+
+    depends_on:
+      - api
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 3s
+      start_period: 10s
+      retries: 3
