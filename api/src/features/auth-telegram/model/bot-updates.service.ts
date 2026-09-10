@@ -19,7 +19,7 @@ interface TelegramUpdate {
   update_id: number;
   message?: {
     text?: string;
-    chat?: { id: number };
+    chat?: { id: number; type?: string };
     from?: TelegramUser;
   };
 }
@@ -89,6 +89,8 @@ export class BotUpdatesService implements OnModuleInit, OnModuleDestroy {
     const text = message?.text?.trim();
 
     if (!from || !chatId || !text) return;
+
+    if (message.chat?.type !== 'private') return;
 
     const match = /^\/start(?:@\w+)?\s+(\S+)$/.exec(text);
     if (!match) {
