@@ -1,11 +1,5 @@
-# UBC Military Fund
-
-Сторінка підтримки збору. React 19 + React Compiler, Vite, Tailwind v4, TypeScript,
-архітектура FSD. Дві мови: українська та англійська.
-
-## Команди
-
-Пакетний менеджер — **pnpm** (версія зафіксована в `packageManager`).
+# UBC Military Fund 
+https://ubc-military-fund.com/
 
 ```bash
 pnpm install
