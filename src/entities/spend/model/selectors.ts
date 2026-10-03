@@ -8,3 +8,8 @@ export const categoriesTotal = (fund: FundConfig) =>
 
 export const peakMonth = (fund: FundConfig) =>
   fund.months.reduce((best, month) => (month[1] > best[1] ? month : best))
+
+export const RECENT_LIMIT = 10
+
+export const latestSpends = (fund: FundConfig, limit = RECENT_LIMIT) =>
+  [...fund.recent].sort((a, b) => b.date.localeCompare(a.date)).slice(0, limit)

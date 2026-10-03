@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ReportMark } from '@entities/bank'
 import {
   categoriesTotal,
+  latestSpends,
   CategoryBars,
   MonthlyChart,
   peakMonth,
@@ -68,7 +69,7 @@ export function ReportPage() {
 
       <Heading>{t('report.h.recent')}</Heading>
       <Card>
-        <RecentList items={fund.recent} />
+        <RecentList items={latestSpends(fund)} />
         <NoteText>{t('report.note.recent')}</NoteText>
       </Card>
 

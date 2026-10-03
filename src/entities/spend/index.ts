@@ -1,4 +1,4 @@
-export { categoriesTotal, peakMonth, totalSpent } from './model/selectors'
+export { categoriesTotal, latestSpends, peakMonth, RECENT_LIMIT, totalSpent } from './model/selectors'
 export { CategoryBars } from './ui/CategoryBars'
 export { MonthlyChart } from './ui/MonthlyChart'
 export { RecentList } from './ui/RecentList'

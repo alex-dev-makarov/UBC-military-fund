@@ -45,10 +45,10 @@ export const fund: FundConfig = {
   ],
 
   categories: [
-    { name: { uk: 'Авто', en: 'Vehicles' }, amount: 276880, color: '#4C5A3E' },
+    { name: { uk: 'Авто', en: 'Vehicles' }, amount: 323920, color: '#4C5A3E' },
     {
       name: { uk: 'Техніка та аксесуари', en: 'Electronics & gear' },
-      amount: 48438,
+      amount: 87438,
       color: '#B5762F',
     },
     { name: { uk: 'Військові речі', en: 'Military kit' }, amount: 36473, color: '#7C8A68' },
@@ -57,7 +57,7 @@ export const fund: FundConfig = {
 
   years: [
     { year: '2025', amount: 82836.73 },
-    { year: '2026', amount: 281646.25 },
+    { year: '2026', amount: 367686.25 },
   ],
 
   months: [
@@ -69,10 +69,29 @@ export const fund: FundConfig = {
     [6, 33070],
     [7, 9998],
     [8, 25000],
-    [9, 2965],
+    [9, 89005],
   ],
 
   recent: [
+    {
+      date: '2026-09-29',
+      title: { uk: 'Ремонт авто (тимчасовий внесок)', en: 'Car repair (temporary contribution)' },
+      amount: 30000,
+    },
+    { date: '2026-09-29', title: { uk: 'Ремонт авто', en: 'Car repair' }, amount: 6200 },
+    {
+      date: '2026-09-21',
+      title: {
+        uk: 'Монітор високої точності для цілодобового екіпажу',
+        en: 'High-precision monitor for the round-the-clock crew',
+      },
+      amount: 39000,
+    },
+    {
+      date: '2026-09-18',
+      title: { uk: 'Ремонт авто', en: 'Car repair' },
+      amount: 10840,
+    },
     {
       date: '2026-09-05',
       title: { uk: 'Ремонт авто — деталь зчеплення', en: 'Car repair — clutch part' },
@@ -93,11 +112,6 @@ export const fund: FundConfig = {
       date: '2026-03-21',
       title: { uk: 'Допомога з купівлею авто', en: 'Help buying a car' },
       amount: 40000,
-    },
-    {
-      date: '2026-03-12',
-      title: { uk: 'Збір на муфту', en: 'Fundraiser for a coupling' },
-      amount: 23000,
     },
   ],
 }
