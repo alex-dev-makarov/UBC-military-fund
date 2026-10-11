@@ -5,11 +5,19 @@ dist
 .env
 .env.*
 !.env.example
+!/.env.dev
+!/.env.production
+!.env.*.example
+deploy/*.env
 api/dist
 api/node_modules
 .jarvis
 
 api/data/
+api/data-*/
 *.sqlite
 *.sqlite-wal
 *.sqlite-shm
+
+*.tsbuildinfo
+.DS_Store

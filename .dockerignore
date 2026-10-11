@@ -13,6 +13,8 @@ docs
 public
 src
 api/data
+api/data-*
+deploy
 **/*.sqlite
 **/*.sqlite-wal
 **/*.sqlite-shm
@@ -25,3 +27,4 @@ api/.env
 api/.env.*
 !.env.example
 !api/.env.example
+
