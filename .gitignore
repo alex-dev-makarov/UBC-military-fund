@@ -13,11 +13,13 @@ api/dist
 api/node_modules
 .jarvis
 
+docs/
 api/data/
 api/data-*/
 *.sqlite
 *.sqlite-wal
 *.sqlite-shm
 
-*.tsbuildinfo
+# macOS finder metadata and the TypeScript incremental build cache.
 .DS_Store
+*.tsbuildinfo
