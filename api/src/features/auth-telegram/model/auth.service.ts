@@ -24,6 +24,7 @@ export class AuthService {
   }): Promise<{ token: string; user: AuthUserPayload }> {
     const userPayload: AuthUserPayload = {
       sub: user.telegramId,
+      iat_ms: Date.now(),
       first_name: user.firstName,
       ...(user.lastName ? { last_name: user.lastName } : {}),
       ...(user.username ? { username: user.username } : {}),
@@ -41,7 +42,4 @@ export class AuthService {
     return { token, user: userPayload };
   }
 
-  async verifyToken(token: string): Promise<AuthUserPayload> {
-    return this.jwtService.verifyAsync<AuthUserPayload>(token);
-  }
 }

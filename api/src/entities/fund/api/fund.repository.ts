@@ -99,7 +99,7 @@ export class FundRepository {
 
     const recent = (
       db
-        .prepare('SELECT date, title_uk, title_en, amount FROM fund_recent ORDER BY sort')
+        .prepare('SELECT date, title_uk, title_en, amount FROM fund_recent ORDER BY date DESC, sort')
         .all() as Array<{ date: string; title_uk: string; title_en: string; amount: number }>
     ).map(
       (row): SpendItem => ({

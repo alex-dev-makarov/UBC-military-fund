@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router'
+import { useLocation, useNavigate } from 'react-router'
 import { DENIED_PATH, HANDOFF_PARAM, MEMBERS_PATH, TelegramLoginButton, useTelegramAuth } from '@features/auth-telegram'
-import { useHandoffTelegramMutation, getFetchErrorStatus } from '@shared/api'
+import { useHandoffTelegramMutation, useLogoutMutation, getFetchErrorStatus } from '@shared/api'
 import { useI18n } from '@shared/i18n'
 import { BackButton, Card, Crumb, Screen } from '@shared/ui'
 import { PrivateReport } from '@widgets/report-view'
-import { PublicReport } from '@widgets/public-report'
 
 const Message = ({ title, text }: { title: string; text: string }) => (
   <>
@@ -18,14 +17,19 @@ export function SecretPage() {
   const { t } = useI18n()
   const navigate = useNavigate()
   const { status, adopt, recheck } = useTelegramAuth()
-  const [params, setParams] = useSearchParams()
-  const [redeeming, setRedeeming] = useState(() => params.has(HANDOFF_PARAM))
+  const { hash, pathname } = useLocation()
+  const handoff = new URLSearchParams(hash.slice(1)).get(HANDOFF_PARAM)
+  const [redeeming, setRedeeming] = useState(() => handoff !== null)
 
   const [handoffTelegram] = useHandoffTelegramMutation()
+  const [logout, { isLoading: loggingOut }] = useLogoutMutation()
+
+  const signOut = () => {
+    void logout().finally(() => window.location.replace(MEMBERS_PATH))
+  }
   const redeemed = useRef(false)
 
   useEffect(() => {
-    const handoff = params.get(HANDOFF_PARAM)
     if (!handoff || redeemed.current) return
     redeemed.current = true
 
@@ -40,9 +44,9 @@ export function SecretPage() {
       })
       .finally(() => {
         setRedeeming(false)
-        setParams({}, { replace: true })
+        navigate(pathname, { replace: true })
       })
-  }, [params, adopt, recheck, setParams, handoffTelegram])
+  }, [handoff, pathname, adopt, recheck, navigate, handoffTelegram])
 
   
   
@@ -52,7 +56,19 @@ export function SecretPage() {
 
   return (
     <Screen bank="report">
-      <BackButton label={t('common.back')} to={MEMBERS_PATH} />
+      <div className="flex items-start justify-between gap-3">
+        <BackButton label={t('common.back')} to={MEMBERS_PATH} />
+        {status === 'member' && (
+          <button
+            type="button"
+            onClick={signOut}
+            disabled={loggingOut}
+            className="tap inline-flex min-h-12 items-center rounded-xl border border-line bg-card px-4 text-[14px] font-semibold text-ink-2 disabled:opacity-50"
+          >
+            {t('secret.logout')}
+          </button>
+        )}
+      </div>
       <Crumb mark={<span aria-hidden>🔒</span>} title={t('secret.title')} />
 
       {(redeeming || status === 'checking') && (
@@ -65,7 +81,7 @@ export function SecretPage() {
         <Card>
           <Message title={t('private.locked.title')} text={t('private.locked.text')} />
           <div className="mt-4">
-            <TelegramLoginButton onAuth={adopt} />
+            <TelegramLoginButton onAuth={adopt} onDenied={() => navigate(DENIED_PATH, { replace: true })} />
           </div>
         </Card>
       )}
@@ -84,21 +100,7 @@ export function SecretPage() {
         </Card>
       )}
 
-      {status === 'member' && (
-        <>
-          <PrivateReport onSessionExpired={recheck} />
-
-          <Card className="mt-4">
-            <p className="text-sm font-bold tracking-[-.01em]">{t('secret.more.title')}</p>
-            <p className="mt-1.5 text-[12.5px] leading-relaxed text-ink-3">{t('secret.more.text')}</p>
-          </Card>
-
-          <h3 className="mb-2.5 mt-6 pl-0.5 text-[13px] font-bold tracking-[.02em] text-ink-2">
-            {t('secret.public.h')}
-          </h3>
-          <PublicReport />
-        </>
-      )}
+      {status === 'member' && <PrivateReport onSessionExpired={recheck} />}
     </Screen>
   )
 }

@@ -8,6 +8,7 @@ interface PollResponse {
 
 interface StartResponse {
   nonce: string
+  code: number
 }
 
 interface HandoffResponse {
@@ -43,6 +44,10 @@ export const endpoints = api.injectEndpoints({
       }),
     }),
 
+    logout: build.mutation<void, void>({
+      query: () => ({ url: '/auth/logout', method: 'POST' }),
+    }),
+
     handoffTelegram: build.mutation<HandoffResponse, { token: string }>({
       query: (body) => ({
         url: '/auth/telegram/handoff',
@@ -60,4 +65,5 @@ export const {
   usePollTelegramQuery,
   useStartTelegramMutation,
   useHandoffTelegramMutation,
+  useLogoutMutation,
 } = endpoints

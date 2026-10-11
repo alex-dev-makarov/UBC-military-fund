@@ -125,10 +125,9 @@ export const uk = {
   'other.foot':
     'Не знайшли у своєму банку? Разовий переказ теж дуже допомагає — *повторити можна коли зручно*.',
 
-  'private.h': 'Закритий звіт',
   'private.locked.title': 'Для учасників групи',
   'private.locked.text':
-    'Деталі передач — підрозділи, напрямки й постачальники — відкриті лише учасникам закритої групи в Telegram. Увійдіть, щоб побачити їх.',
+    'Детальний звіт — кому й на що пішли кошти — відкритий лише учасникам закритої групи в Telegram. Увійдіть, щоб побачити його.',
   'private.checking': 'Перевіряємо доступ…',
   'private.loading': 'Завантажуємо звіт…',
   'private.denied.title': 'Доступу немає',
@@ -139,10 +138,34 @@ export const uk = {
     'Закритий звіт зараз недоступний. Публічна частина вище — актуальна.',
   'private.retry': 'Спробувати ще раз',
   'private.generated': 'Дані станом на {date}',
-  'private.reserve': 'залишок на банці',
-  'private.h.deliveries': 'Передано підрозділам',
-  'private.h.pending': 'У роботі',
-  'private.h.suppliers': 'Постачальники',
+  'private.total': 'витрачено з фонду',
+  'private.receipts.all': 'На всі витрати є чеки',
+  'private.receipts.some': 'Чеки є не на всі витрати',
+  'private.year.summary': 'зведено',
+  'private.year.items': '{n} {unit}',
+  'private.unit.one': 'витрата',
+  'private.unit.few': 'витрати',
+  'private.unit.many': 'витрат',
+  'private.unit.other': 'витрати',
+  'private.h.monthly': 'Витрати по місяцях · {year}',
+  'private.stat.people': 'людей',
+  'private.stat.average': 'середня витрата',
+  'private.month.hint': 'Натисніть на місяць, щоб побачити, кому допомогли.',
+  'private.month.close': 'Закрити',
+  'private.h.people': 'Кому допомогли',
+  'private.people.note': 'Натисніть на імʼя, щоб побачити лише його витрати.',
+  'private.h.ledger': 'Витрати за {years} рік',
+  'private.filter.all': 'Усі',
+  'private.no.person': 'Загальне',
+  'private.commission': 'комісія {amount}',
+  'private.delivery': 'доставка {amount}',
+  'private.receipt': 'чек',
+  'private.no.receipt': 'без чека',
+  'private.summary.row': 'Витрати {year} року — зведеною сумою',
+  'private.confidential':
+    'Звіт позначено вашим Telegram ID і часом перегляду — вони потрапляють на кожен скріншот. Перегляди записуються. Будь ласка, не пересилайте.',
+  'private.hidden': 'Звіт приховано, поки сторінка неактивна. Поверніться, щоб продовжити.',
+  'private.viewer': 'Переглядає {who}',
   'private.empty': 'Поки що порожньо',
 
   'fund.loading': 'Завантажуємо дані фонду…',
@@ -153,8 +176,10 @@ export const uk = {
 
   'private.deeplink.cta': 'Увійти через Telegram',
   'private.deeplink.waiting':
-    'Відкрили чат з ботом. Натисніть там «Почати» — і поверніться сюди, сторінка оновиться сама.',
-  'private.deeplink.reopen': 'Відкрити чат ще раз',
+    'Запамʼятайте це число. Відкрийте Telegram, натисніть «Почати» і виберіть його — сторінка оновиться сама.',
+  'private.deeplink.open': 'Відкрити Telegram',
+  'private.deeplink.code': 'ваше число',
+  'secret.logout': 'Вийти',
   'private.deeplink.cancel': 'Скасувати',
   'private.deeplink.expired': 'Посилання застаріло.',
   'private.deeplink.error': 'Не вдалося звʼязатися з сервером.',
@@ -163,13 +188,9 @@ export const uk = {
 
   'members.title': 'Звіт для членів церкви',
   'members.hint': 'Вхід через Telegram — за кілька секунд',
-  'members.hint.waiting': 'Відкрили Telegram — натисніть «Почати»',
+  'members.hint.waiting': 'Запамʼятайте число нижче й відкрийте Telegram',
   'members.reassure':
-    'Ми не бачимо ваш номер телефону і не зберігаємо імені — лише перевіряємо, що ви є в церковній групі. Вийти можна будь-коли, доступ діє 15 хвилин.',
-  'secret.public.h': 'Загальний звіт',
-  'secret.more.title': 'Далі буде більше',
-  'secret.more.text':
-    'Тут поступово зʼявлятимуться деталі, які ми не публікуємо відкрито. Поки що доступний загальний звіт — він оновлюється разом із публічним.',
+    'Ми не бачимо ваш номер телефону і не зберігаємо імені — лише перевіряємо, що ви є в церковній групі. Перегляди закритого звіту записуються за Telegram ID. Вийти можна будь-коли, доступ діє 15 хвилин.',
 
   'denied.title': 'Тільки для членів церкви',
   'denied.text':

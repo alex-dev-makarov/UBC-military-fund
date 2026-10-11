@@ -43,4 +43,12 @@ export class HandoffRepository {
       .get(token) as { telegram_id: number } | undefined;
     return row?.telegram_id;
   }
+
+  consumeAllFor(telegramId: number): number {
+    return Number(
+      this.database.connection
+        .prepare('UPDATE handoff_tokens SET consumed_at = ? WHERE telegram_id = ? AND consumed_at IS NULL')
+        .run(Date.now(), telegramId).changes,
+    );
+  }
 }

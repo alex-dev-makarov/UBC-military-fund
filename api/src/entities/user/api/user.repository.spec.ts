@@ -27,6 +27,7 @@ describe('UserRepository.recordLogin', () => {
       'last_login_at',
       'is_member',
       'membership_checked_at',
+      'sessions_valid_after',
     ]);
   });
 
@@ -94,5 +95,19 @@ describe('UserRepository.setMembership', () => {
     users.setMembership(9, true);
     users.setMembership(9, false);
     expect(users.findById(9)?.is_member).toBe(0);
+  });
+});
+
+describe('UserRepository.revokeSessions', () => {
+  it('invalidates tokens issued before the revocation, keeps later ones', () => {
+    const { users } = repo();
+    users.recordLogin(5);
+    expect(users.isSessionRevoked(5, 1000)).toBe(false);
+
+    users.revokeSessions(5, 2_000_500);
+    expect(users.isSessionRevoked(5, 2_000_499)).toBe(true);
+    expect(users.isSessionRevoked(5, 2_000_500)).toBe(true);
+    expect(users.isSessionRevoked(5, 2_000_501)).toBe(false);
+    expect(users.isSessionRevoked(6, 1)).toBe(false);
   });
 });

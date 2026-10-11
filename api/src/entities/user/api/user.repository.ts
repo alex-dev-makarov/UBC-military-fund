@@ -33,6 +33,24 @@ export class UserRepository {
       .run(telegramId, now, now, isMember ? 1 : 0, now);
   }
 
+  revokeSessions(telegramId: number, nowMs = Date.now()): void {
+    const now = Date.now();
+    this.database.connection
+      .prepare(
+        `INSERT INTO users (telegram_id, first_seen_at, last_login_at, sessions_valid_after)
+         VALUES (?, ?, ?, ?)
+         ON CONFLICT (telegram_id) DO UPDATE SET sessions_valid_after = excluded.sessions_valid_after`,
+      )
+      .run(telegramId, now, now, nowMs);
+  }
+
+  isSessionRevoked(telegramId: number, issuedAtMs: number): boolean {
+    const row = this.database.connection
+      .prepare('SELECT sessions_valid_after FROM users WHERE telegram_id = ?')
+      .get(telegramId) as { sessions_valid_after: number } | undefined;
+    return row !== undefined && issuedAtMs <= row.sessions_valid_after;
+  }
+
   findById(telegramId: number): UserRecord | undefined {
     return this.database.connection
       .prepare('SELECT * FROM users WHERE telegram_id = ?')

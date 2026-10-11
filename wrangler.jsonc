@@ -4,5 +4,14 @@
   "assets": {
     "directory": "./dist",
     "not_found_handling": "single-page-application"
+  },
+  "env": {
+    "dev": {
+      "routes": [{ "pattern": "dev.ubc-military-fund.com", "custom_domain": true }],
+      "assets": {
+        "directory": "./dist",
+        "not_found_handling": "single-page-application"
+      }
+    }
   }
 }

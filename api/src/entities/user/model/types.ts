@@ -4,4 +4,5 @@ export interface UserRecord {
   last_login_at: number;
   is_member: number;
   membership_checked_at: number;
+  sessions_valid_after: number;
 }

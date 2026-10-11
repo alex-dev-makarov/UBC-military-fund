@@ -25,7 +25,12 @@ describe('DatabaseService', () => {
       'fund_years',
       'handoff_tokens',
       'login_nonces',
+      'private_expenses',
+      'private_meta',
+      'private_years',
+      'report_views',
       'schema_migrations',
+      'security_events',
       'users',
     ]);
   });
@@ -64,6 +69,10 @@ describe('DatabaseService', () => {
       '0008_drop_used_hashes',
       '0009_login_origin',
       '0010_cleanup',
+      '0011_private_ledger',
+      '0012_report_views',
+      '0013_login_confirm',
+      '0014_security_hardening',
     ]);
   });
 });

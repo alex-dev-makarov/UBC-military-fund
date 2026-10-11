@@ -1,5 +1,6 @@
 {
   "name": "ubc-military-fund",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "sideEffects": [
@@ -12,18 +13,25 @@
   "scripts": {
     "dev": "vite --host",
     "build": "tsc -b && vite build",
+    "build:dev": "tsc -b && vite build --mode dev",
     "preview": "vite preview",
     "typecheck": "tsc -b --force",
     "deploy": "pnpm run build && wrangler deploy",
+    "deploy:dev": "pnpm run build:dev && wrangler deploy --env dev",
     "lint": "eslint .",
     "docker:up": "docker compose up -d --build --wait",
     "docker:down": "docker compose down",
-    "docker:reset": "docker compose down && rm -f api/data/ubc.sqlite* && docker compose up -d --build --wait && docker compose exec -T api node scripts/seed.mjs",
+    "docker:reset": "docker compose down && rm -f api/data/ubc.sqlite* && docker compose up -d --build --wait && docker compose exec -T api node scripts/seed.mjs && pnpm private:demo",
     "docker:logs": "docker compose logs -f api",
-    "docker:health": "curl -sS localhost:3000/health",
     "db": "node scripts/db.mjs",
-    "db:migrate": "pnpm --filter api db:migrate",
-    "db:seed": "pnpm --filter api db:seed"
+    "db:seed": "pnpm --filter api db:seed",
+    "private:export": "docker compose exec -T api node scripts/private.mjs export",
+    "views": "docker compose exec -T api node scripts/views.mjs",
+    "server:dev": "docker compose --env-file deploy/dev.env -f docker-compose.yml -f docker-compose.server.yml up -d --build --wait",
+    "server:prod": "docker compose --env-file deploy/prod.env -f docker-compose.yml -f docker-compose.server.yml up -d --build --wait",
+    "server:dev:logs": "docker compose --env-file deploy/dev.env -f docker-compose.yml -f docker-compose.server.yml logs -f",
+    "server:prod:logs": "docker compose --env-file deploy/prod.env -f docker-compose.yml -f docker-compose.server.yml logs -f",
+    "private:demo": "docker compose exec -T api node scripts/private.mjs demo"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.2.0",

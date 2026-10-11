@@ -127,10 +127,9 @@ export const en: Dict = {
   'other.foot':
     'Nothing like that in your bank? A one-time transfer helps a great deal too — *you can repeat it whenever it suits you*.',
 
-  'private.h': 'Private report',
   'private.locked.title': 'For group members',
   'private.locked.text':
-    'Delivery details — units, directions and suppliers — are open only to members of the private Telegram group. Sign in to see them.',
+    'The detailed report — who received the money and what for — is open only to members of the private Telegram group. Sign in to see it.',
   'private.checking': 'Checking access…',
   'private.loading': 'Loading the report…',
   'private.denied.title': 'No access',
@@ -141,10 +140,34 @@ export const en: Dict = {
     'The private report is unavailable right now. The public part above is current.',
   'private.retry': 'Try again',
   'private.generated': 'Data as of {date}',
-  'private.reserve': 'jar balance',
-  'private.h.deliveries': 'Delivered to units',
-  'private.h.pending': 'In progress',
-  'private.h.suppliers': 'Suppliers',
+  'private.total': 'spent from the fund',
+  'private.receipts.all': 'Every expense has a receipt',
+  'private.receipts.some': 'Not every expense has a receipt',
+  'private.year.summary': 'summary',
+  'private.year.items': '{n} {unit}',
+  'private.unit.one': 'expense',
+  'private.unit.few': 'expenses',
+  'private.unit.many': 'expenses',
+  'private.unit.other': 'expenses',
+  'private.h.monthly': 'Spending by month · {year}',
+  'private.stat.people': 'people',
+  'private.stat.average': 'average expense',
+  'private.month.hint': 'Tap a month to see who was helped.',
+  'private.month.close': 'Close',
+  'private.h.people': 'Who we helped',
+  'private.people.note': 'Tap a name to see only their expenses.',
+  'private.h.ledger': 'Expenses in {years}',
+  'private.filter.all': 'All',
+  'private.no.person': 'General',
+  'private.commission': 'fee {amount}',
+  'private.delivery': 'delivery {amount}',
+  'private.receipt': 'receipt',
+  'private.no.receipt': 'no receipt',
+  'private.summary.row': '{year} expenses — as a single total',
+  'private.confidential':
+    'This report is marked with your Telegram ID and the time of viewing — they end up on every screenshot. Views are logged. Please do not forward.',
+  'private.hidden': 'The report is hidden while the page is not active. Come back to continue.',
+  'private.viewer': 'Viewed by {who}',
   'private.empty': 'Nothing here yet',
 
   'fund.loading': 'Loading fund data…',
@@ -155,8 +178,10 @@ export const en: Dict = {
 
   'private.deeplink.cta': 'Sign in with Telegram',
   'private.deeplink.waiting':
-    'The bot chat is open. Press Start there and come back — this page updates on its own.',
-  'private.deeplink.reopen': 'Open the chat again',
+    'Remember this number. Open Telegram, press Start and pick it — this page updates by itself.',
+  'private.deeplink.open': 'Open Telegram',
+  'private.deeplink.code': 'your number',
+  'secret.logout': 'Sign out',
   'private.deeplink.cancel': 'Cancel',
   'private.deeplink.expired': 'The link has expired.',
   'private.deeplink.error': 'Could not reach the server.',
@@ -165,13 +190,9 @@ export const en: Dict = {
 
   'members.title': 'Report for church members',
   'members.hint': 'Sign in with Telegram — takes a few seconds',
-  'members.hint.waiting': 'Telegram is open — press Start',
+  'members.hint.waiting': 'Remember the number below and open Telegram',
   'members.reassure':
-    'We never see your phone number and we do not store your name — we only check that you are in the church group. You can leave at any time; access lasts 15 minutes.',
-  'secret.public.h': 'General report',
-  'secret.more.title': 'More to come',
-  'secret.more.text':
-    'Details we do not publish openly will appear here over time. For now the general report is available — it updates alongside the public one.',
+    'We never see your phone number and we do not store your name — we only check that you are in the church group. Views of the private report are logged by Telegram ID. You can leave at any time; access lasts 15 minutes.',
 
   'denied.title': 'For church members only',
   'denied.text':

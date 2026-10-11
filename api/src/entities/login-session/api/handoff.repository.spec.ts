@@ -77,4 +77,13 @@ describe('HandoffRepository.peek', () => {
     const handoffs = repo();
     expect(handoffs.peek(handoffs.create(42, -1))).toBeUndefined();
   });
+
+  it('"not me" burns every unused link of that person', () => {
+    const handoffs = repo();
+    const mine = handoffs.create(1, 60_000);
+    const theirs = handoffs.create(2, 60_000);
+    expect(handoffs.consumeAllFor(1)).toBe(1);
+    expect(handoffs.peek(mine)).toBeUndefined();
+    expect(handoffs.peek(theirs)).toBe(2);
+  });
 });

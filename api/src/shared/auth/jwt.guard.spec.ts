@@ -22,7 +22,7 @@ function contextWithCookies(cookies: Record<string, string>): {
 
 describe('JwtAuthGuard', () => {
   const jwt = new JwtService({ secret: SECRET, signOptions: { algorithm: 'HS256' } });
-  const guard = new JwtAuthGuard(jwt, config);
+  const guard = new JwtAuthGuard({ record: () => undefined } as never, jwt, config);
 
   beforeEach(() => {
 

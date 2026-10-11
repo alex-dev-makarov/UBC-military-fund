@@ -1,4 +1,4 @@
-export { TelegramLoginButton } from './ui/TelegramLoginButton'
+export { LoginPrompt, TelegramLoginButton } from './ui/TelegramLoginButton'
 export { useTelegramAuth } from './model/useTelegramAuth'
 export { useTelegramDeepLink } from './model/useTelegramDeepLink'
 export { MEMBERS_PATH, SECRET_PATH, DENIED_PATH, HANDOFF_PARAM } from './model/constants'

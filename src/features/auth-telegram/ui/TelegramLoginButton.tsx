@@ -9,49 +9,61 @@ const TelegramGlyph = () => (
   </svg>
 )
 
+export function LoginPrompt({
+  code,
+  url,
+  onCancel,
+}: {
+  code: number | null
+  url: string | null
+  onCancel: () => void
+}) {
+  const t = useT()
+  return (
+    <div className="flex flex-col items-center gap-3">
+      {code !== null && (
+        <div className="flex flex-col items-center gap-1">
+          <span className="text-[10.5px] font-semibold uppercase tracking-[.14em] text-ink-3">
+            {t('private.deeplink.code')}
+          </span>
+          <span className="num text-[38px] font-extrabold leading-none tracking-[.04em]">{code}</span>
+        </div>
+      )}
+      <p className="text-center text-[12.5px] leading-relaxed text-ink-3">{t('private.deeplink.waiting')}</p>
+      {url && (
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="tap inline-flex min-h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-[#2AABEE] px-5 text-[14.5px] font-bold text-white active:opacity-90"
+        >
+          <TelegramGlyph />
+          {t('private.deeplink.open')}
+        </a>
+      )}
+      <button type="button" onClick={onCancel} className="text-[12px] text-ink-3 underline underline-offset-4">
+        {t('private.deeplink.cancel')}
+      </button>
+    </div>
+  )
+}
+
 interface Props {
   onAuth: (user: AuthUser) => void
   
   onDenied?: () => void
-  disabled?: boolean
 }
 
-export function TelegramLoginButton({ onAuth, onDenied, disabled = false }: Props) {
+export function TelegramLoginButton({ onAuth, onDenied }: Props) {
   const t = useT()
-  const { phase, url, start, cancel } = useTelegramDeepLink(onAuth)
+  const { phase, url, code, start, cancel } = useTelegramDeepLink(onAuth)
 
   useEffect(() => {
     if (phase === 'denied') onDenied?.()
   }, [phase, onDenied])
 
-  if (phase === 'waiting') {
-    return (
-      <div className="flex flex-col items-center gap-2">
-        <p className="text-center text-[12.5px] leading-relaxed text-ink-3">
-          {t('private.deeplink.waiting')}
-        </p>
-        {url && (
-          <a
-            href={url}
-            className="text-[12.5px] font-semibold underline underline-offset-4"
-          >
-            {t('private.deeplink.reopen')}
-          </a>
-        )}
-        <button
-          type="button"
-          onClick={cancel}
-          className="text-[12px] text-ink-3 underline underline-offset-4"
-        >
-          {t('private.deeplink.cancel')}
-        </button>
-      </div>
-    )
-  }
+  if (phase === 'waiting') return <LoginPrompt code={code} url={url} onCancel={cancel} />
 
-  
-  
-  
   if (phase === 'expired' || phase === 'error') {
     return (
       <div className="flex flex-col items-center gap-2">
@@ -74,8 +86,7 @@ export function TelegramLoginButton({ onAuth, onDenied, disabled = false }: Prop
       <button
         type="button"
         onClick={start}
-        disabled={disabled}
-        className="tap inline-flex min-h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-[#2AABEE] px-5 text-[14.5px] font-bold text-white active:opacity-90 disabled:opacity-50"
+        className="tap inline-flex min-h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-[#2AABEE] px-5 text-[14.5px] font-bold text-white active:opacity-90"
       >
         <TelegramGlyph />
         {t('private.deeplink.cta')}

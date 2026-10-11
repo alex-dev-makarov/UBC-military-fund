@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { validate } from './env';
 
 const base = {
+  APP_ENV: 'local',
   JWT_SECRET: 'x'.repeat(40),
   TELEGRAM_BOT_TOKEN: '1:token',
   TELEGRAM_CHAT_ID: '-100',
@@ -150,3 +151,54 @@ describe('validate: MEMBERSHIP_TTL_SEC', () => {
     expect(() => validate({ ...base, MEMBERSHIP_TTL_SEC: 'never' })).toThrow(/MEMBERSHIP_TTL_SEC/);
   });
 })
+
+describe('validate: APP_ENV', () => {
+  const server = {
+    ...base,
+    FRONTEND_ORIGIN: 'https://dev.example.com',
+    COOKIE_SECURE: 'true',
+    COOKIE_SAMESITE: 'strict',
+    COOKIE_NAME: '__Host-ubc_session',
+  };
+
+  it('treats a missing APP_ENV as prod (fail closed)', () => {
+    const { APP_ENV: _omit, ...rest } = base;
+    expect(() => validate(rest)).toThrow(/APP_ENV=prod/);
+  });
+
+  it('rejects an unknown value', () => {
+    expect(() => validate({ ...base, APP_ENV: 'staging' })).toThrow(/APP_ENV must be one of/);
+  });
+
+  it('allows http and insecure cookies only locally', () => {
+    expect(validate({ ...base }).APP_ENV).toBe('local');
+  });
+
+  it.each(['dev', 'prod'])('%s boots with https + secure cookies', (appEnv) => {
+    expect(validate({ ...server, APP_ENV: appEnv }).APP_ENV).toBe(appEnv);
+  });
+
+  it.each([
+    [{ COOKIE_SECURE: 'false' }, /COOKIE_SECURE must be true/],
+    [{ COOKIE_SAMESITE: 'none' }, /COOKIE_SAMESITE must be lax or strict/],
+    [{ FRONTEND_ORIGIN: 'https://dev.example.com,http://localhost:5173' }, /https only/],
+    [{ PUBLIC_SITE_URL: 'http://dev.example.com' }, /https only/],
+    [{ COOKIE_NAME: 'ubc_session' }, /__Host-/],
+    [{ COOKIE_DOMAIN: '.example.com' }, /COOKIE_DOMAIN must be empty/],
+  ])('prod refuses %o', (override, error) => {
+    expect(() => validate({ ...server, APP_ENV: 'prod', ...override })).toThrow(error);
+  });
+});
+
+describe('validate: cookie and retention defaults', () => {
+  it('names the cookie per environment', () => {
+    expect(validate({ ...base }).COOKIE_NAME).toBe('ubc_session');
+    expect(
+      validate({ ...base, APP_ENV: 'dev', FRONTEND_ORIGIN: 'https://d.example.com', COOKIE_SECURE: 'true' }).COOKIE_NAME,
+    ).toBe('__Host-ubc_session');
+  });
+
+  it('refuses a log retention shorter than the database lock', () => {
+    expect(() => validate({ ...base, VIEW_LOG_RETENTION_DAYS: '7' })).toThrow(/at least 30/);
+  });
+});

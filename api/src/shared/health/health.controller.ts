@@ -8,14 +8,7 @@ export class HealthController {
 
   @Get()
   getHealth(@Res() res: Response): void {
-    const db = this.database.health();
-
-    res
-      .status(db.ok ? HttpStatus.OK : HttpStatus.SERVICE_UNAVAILABLE)
-      .json({
-        status: db.ok ? 'ok' : 'degraded',
-        uptime: process.uptime(),
-        db,
-      });
+    const ok = this.database.health().ok;
+    res.status(ok ? HttpStatus.OK : HttpStatus.SERVICE_UNAVAILABLE).json({ status: ok ? 'ok' : 'degraded' });
   }
 }

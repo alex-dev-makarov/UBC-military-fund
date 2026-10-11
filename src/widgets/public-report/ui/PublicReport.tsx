@@ -1,6 +1,7 @@
 import {
   categoriesTotal,
   CategoryBars,
+  latestSpends,
   MonthlyChart,
   peakMonth,
   RecentList,
@@ -62,7 +63,7 @@ export function PublicReport() {
 
     <Heading>{t('report.h.recent')}</Heading>
     <Card>
-      <RecentList items={fund.recent} />
+      <RecentList items={latestSpends(fund)} />
       <NoteText>{t('report.note.recent')}</NoteText>
     </Card>
 

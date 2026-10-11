@@ -2,6 +2,7 @@ import { join } from 'node:path';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from '../shared/db';
+import { SecurityLogModule } from '../shared/log';
 import { HealthController } from '../shared/health';
 import { AuthModule } from '../features/auth-telegram';
 import { ReportModule } from '../features/report-access';
@@ -19,6 +20,7 @@ import { validate } from './config/env';
       validate,
     }),
     DatabaseModule,
+    SecurityLogModule,
     AuthModule,
     ReportModule,
   ],

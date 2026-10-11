@@ -127,6 +127,10 @@
   .num { font-variant-numeric: tabular-nums; }
 }
 
+@media print {
+  [data-sensitive] { display: none !important; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: .01ms !important;

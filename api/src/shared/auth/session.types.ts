@@ -5,5 +5,6 @@ export interface AuthUserPayload {
   username?: string;
   photo_url?: string;
   iat?: number;
+  iat_ms?: number;
   exp?: number;
 }

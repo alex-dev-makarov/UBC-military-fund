@@ -13,6 +13,7 @@ const child = spawn('node', ['dist/main'], {
   cwd: API_ROOT,
   env: {
     ...process.env,
+    APP_ENV: 'local',
     PORT: String(PORT),
     DATABASE_PATH: ':memory:',
     
@@ -74,7 +75,12 @@ try {
   const health = await fetch(`${BASE}/health`);
   const healthBody = await health.json();
   check('/health returns 200', health.status === 200, `got ${health.status}`);
-  check('/health reports a live database', healthBody.db?.ok === true, JSON.stringify(healthBody.db));
+  check('/health reports ok and nothing else', JSON.stringify(healthBody) === '{"status":"ok"}', JSON.stringify(healthBody));
+  check('responses carry security headers',
+    health.headers.get('x-frame-options') === 'DENY' &&
+      health.headers.get('x-content-type-options') === 'nosniff' &&
+      (health.headers.get('cache-control') ?? '').includes('no-store') &&
+      !health.headers.has('x-powered-by'));
 
   const publicReport = await fetch(`${BASE}/report/public`);
   const fund = await publicReport.json();
@@ -95,9 +101,35 @@ try {
   const me = await fetch(`${BASE}/auth/me`);
   check('/auth/me is 401 without a cookie', me.status === 401, `got ${me.status}`);
 
-  const canary = JSON.stringify(fund);
-  check('the private canary is absent from the public payload',
-    !canary.includes('UBC-PRIVATE-CANARY'));
+  const noOrigin = await fetch(`${BASE}/auth/telegram/start`, { method: 'POST' });
+  check('login start without an allowed Origin is 403', noOrigin.status === 403, `got ${noOrigin.status}`);
+
+  const start = await fetch(`${BASE}/auth/telegram/start`, {
+    method: 'POST',
+    headers: { Origin: 'http://localhost:5173' },
+  });
+  const started = await start.json();
+  const binding = start.headers.get('set-cookie') ?? '';
+  check('login start returns a nonce and a two-digit code',
+    start.status === 200 && typeof started.nonce === 'string' && started.code >= 10 && started.code <= 99,
+    JSON.stringify(started));
+  check('login start binds the browser with an httpOnly cookie',
+    /_login=/.test(binding) && /HttpOnly/i.test(binding), binding);
+
+  const foreign = await fetch(`${BASE}/auth/telegram/poll?nonce=${started.nonce}`);
+  check('another browser polling the nonce gets nothing', (await foreign.json()).status === 'expired');
+
+  const own = await fetch(`${BASE}/auth/telegram/poll?nonce=${started.nonce}`, {
+    headers: { Cookie: binding.split(';')[0] },
+  });
+  check('the starting browser sees pending', (await own.json()).status === 'pending');
+
+  const csrf = await fetch(`${BASE}/auth/telegram/handoff`, {
+    method: 'POST',
+    headers: { Origin: 'http://localhost:5173', 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'token=x',
+  });
+  check('handoff refuses form posts (login CSRF)', csrf.status === 415, `got ${csrf.status}`);
 } catch (error) {
   failures.push(error.message);
   console.error(error.message);

@@ -1,9 +1,12 @@
 #!/usr/bin/env node
 
 import 'reflect-metadata';
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from '../dist/app/app.module.js';
-import { FundRepository } from '../dist/entities/fund/api/fund.repository.js';
+
+process.env.TELEGRAM_BOT_POLLING = 'false';
+
+const { NestFactory } = await import('@nestjs/core');
+const { AppModule } = await import('../dist/app/app.module.js');
+const { FundRepository } = await import('../dist/entities/fund/api/fund.repository.js');
 
 const app = await NestFactory.createApplicationContext(AppModule, { logger: false });
 

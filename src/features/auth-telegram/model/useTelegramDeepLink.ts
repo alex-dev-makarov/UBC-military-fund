@@ -10,18 +10,24 @@ type Phase = 'idle' | 'waiting' | 'authorized' | 'denied' | 'expired' | 'error'
 
 const PENDING_KEY = 'ubc:pending-nonce'
 
-const readPending = (): string | null => {
+interface Pending {
+  nonce: string
+  code: number
+}
+
+const readPending = (): Pending | null => {
   try {
-    return window.sessionStorage.getItem(PENDING_KEY)
+    const value = JSON.parse(window.sessionStorage.getItem(PENDING_KEY) ?? 'null') as Pending | null
+    return value && typeof value.nonce === 'string' && typeof value.code === 'number' ? value : null
   } catch {
     return null
   }
 }
 
-const writePending = (nonce: string | null) => {
+const writePending = (pending: Pending | null) => {
   try {
-    if (nonce === null) window.sessionStorage.removeItem(PENDING_KEY)
-    else window.sessionStorage.setItem(PENDING_KEY, nonce)
+    if (pending === null) window.sessionStorage.removeItem(PENDING_KEY)
+    else window.sessionStorage.setItem(PENDING_KEY, JSON.stringify(pending))
   } catch {}
 }
 
@@ -29,14 +35,15 @@ interface DeepLinkLogin {
   phase: Phase
 
   url: string | null
+  code: number | null
   start: () => void
   cancel: () => void
 }
 
 export function useTelegramDeepLink(onAuthorized: (user: AuthUser) => void): DeepLinkLogin {
   const [phase, setPhase] = useState<Phase>('idle')
-  const [url, setUrl] = useState<string | null>(null)
   const [nonce, setNonce] = useState<string | null>(null)
+  const [code, setCode] = useState<number | null>(null)
   const alive = useRef(true)
   const onDone = useRef(onAuthorized)
 
@@ -55,7 +62,7 @@ export function useTelegramDeepLink(onAuthorized: (user: AuthUser) => void): Dee
 
   const shouldPoll = nonce && phase === 'waiting'
 
-  const { data: pollResult, error: pollError } = usePollTelegramQuery(nonce || '', {
+  const { data: pollResult, error: pollError, refetch: refetchPoll } = usePollTelegramQuery(nonce || '', {
     skip: !shouldPoll,
     pollingInterval: 1500,
   })
@@ -91,24 +98,34 @@ export function useTelegramDeepLink(onAuthorized: (user: AuthUser) => void): Dee
   useEffect(() => {
     const pending = readPending()
     if (!pending) return
-    setNonce(pending)
+    setNonce(pending.nonce)
+    setCode(pending.code)
     setPhase('waiting')
   }, [])
 
+  useEffect(() => {
+    if (!shouldPoll) return
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void refetchPoll()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', onVisible)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', onVisible)
+    }
+  }, [shouldPoll, refetchPoll])
+
   const start = () => {
     setPhase('waiting')
-
     void startTelegram().then((result) => {
       if (!alive.current) return
       if ('data' in result && result.data) {
-        const bot = import.meta.env.VITE_TELEGRAM_BOT
-        const link = `https://t.me/${bot}?start=${result.data.nonce}`
-        setUrl(link)
-        writePending(result.data.nonce)
+        writePending({ nonce: result.data.nonce, code: result.data.code })
         setNonce(result.data.nonce)
-        window.location.assign(link)
+        setCode(result.data.code)
       } else {
-        if (alive.current) setPhase('error')
+        setPhase('error')
       }
     })
   }
@@ -116,9 +133,11 @@ export function useTelegramDeepLink(onAuthorized: (user: AuthUser) => void): Dee
   const cancel = () => {
     writePending(null)
     setPhase('idle')
-    setUrl(null)
     setNonce(null)
+    setCode(null)
   }
 
-  return { phase, url, start, cancel }
+  const url = nonce ? `https://t.me/${import.meta.env.VITE_TELEGRAM_BOT}?start=${nonce}` : null
+
+  return { phase, url, code, start, cancel }
 }

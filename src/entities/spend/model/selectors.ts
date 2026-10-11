@@ -11,3 +11,8 @@ export const peakMonth = (fund: PublicFund): [number, number] =>
     (best, month) => (month[1] > best[1] ? month : best),
     [0, 0],
   )
+
+const RECENT_LIMIT = 10
+
+export const latestSpends = (fund: PublicFund, limit = RECENT_LIMIT) =>
+  [...fund.recent].sort((a, b) => b.date.localeCompare(a.date)).slice(0, limit)

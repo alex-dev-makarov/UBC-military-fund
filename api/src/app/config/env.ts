@@ -44,10 +44,17 @@ function toBoolean(name: string, raw: string | undefined, fallback: boolean): bo
   throw new Error(`Environment variable ${name} must be a boolean-like value (true/false/1/0/yes/no), got: ${raw}`);
 }
 
+const APP_ENVS = ['local', 'dev', 'prod'] as const;
+
 export function validate(config: RawEnv): ValidatedEnv {
   const validated: Record<string, unknown> = { ...config };
+
+  const appEnv = (config.APP_ENV || 'prod').trim().toLowerCase();
+  if (!(APP_ENVS as readonly string[]).includes(appEnv)) {
+    throw new Error(`Environment variable APP_ENV must be one of ${APP_ENVS.join(', ')}, got: ${config.APP_ENV}`);
+  }
+  validated.APP_ENV = appEnv;
   validated.PORT = toNumber('PORT', config.PORT, 3000, 65535);
-  validated.AUTH_MAX_AGE_SEC = toNumber('AUTH_MAX_AGE_SEC', config.AUTH_MAX_AGE_SEC, 60, 3600);
 
   const jwtSecret = requireString('JWT_SECRET', config.JWT_SECRET);
   if (jwtSecret.length < 32) {
@@ -92,6 +99,11 @@ export function validate(config: RawEnv): ValidatedEnv {
   validated.TELEGRAM_BOT_POLLING = toBoolean('TELEGRAM_BOT_POLLING', config.TELEGRAM_BOT_POLLING, true);
 
   validated.LOGIN_NONCE_TTL_SEC = toNumber('LOGIN_NONCE_TTL_SEC', config.LOGIN_NONCE_TTL_SEC, 300, 3600);
+  validated.HANDOFF_TTL_SEC = toNumber('HANDOFF_TTL_SEC', config.HANDOFF_TTL_SEC, 120, 600);
+  validated.VIEW_LOG_RETENTION_DAYS = toNumber('VIEW_LOG_RETENTION_DAYS', config.VIEW_LOG_RETENTION_DAYS, 180, 3650);
+  if ((validated.VIEW_LOG_RETENTION_DAYS as number) < 30) {
+    throw new Error('VIEW_LOG_RETENTION_DAYS must be at least 30 (the database refuses to delete younger log rows)');
+  }
 
   const membershipTtlRaw = (config.MEMBERSHIP_TTL_SEC ?? '').trim();
   if (membershipTtlRaw === '0') {
@@ -123,6 +135,22 @@ export function validate(config: RawEnv): ValidatedEnv {
         .filter((entry) => /^https?:\/\//.test(entry)),
     ),
   );
+
+  validated.COOKIE_NAME = (config.COOKIE_NAME || (appEnv === 'local' ? 'ubc_session' : '__Host-ubc_session')).trim();
+  validated.COOKIE_DOMAIN = (config.COOKIE_DOMAIN ?? '').trim();
+
+  if (appEnv !== 'local') {
+    const problems: string[] = [];
+    if (!(validated.COOKIE_NAME as string).startsWith('__Host-')) problems.push('COOKIE_NAME must start with __Host-');
+    if (validated.COOKIE_DOMAIN) problems.push('COOKIE_DOMAIN must be empty (the cookie belongs to the API host only)');
+    if (!secure) problems.push('COOKIE_SECURE must be true');
+    if (rawSameSite === 'none') problems.push('COOKIE_SAMESITE must be lax or strict (the SPA and API are same-site)');
+    const insecure = (validated.ALLOWED_ORIGINS as string[]).filter((o) => !o.startsWith('https://'));
+    if (insecure.length > 0) problems.push(`FRONTEND_ORIGIN / PUBLIC_SITE_URL must be https only, got: ${insecure.join(', ')}`);
+    if (problems.length > 0) {
+      throw new Error(`APP_ENV=${appEnv} configuration error:\n  - ${problems.join('\n  - ')}`);
+    }
+  }
 
   return validated as unknown as ValidatedEnv;
 }

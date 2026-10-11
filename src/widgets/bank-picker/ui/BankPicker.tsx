@@ -3,7 +3,7 @@ import { BankMark, BankRow, banks, ReportMark } from '@entities/bank'
 import { totalSpent } from '@entities/spend'
 import { useFund } from '@entities/fund'
 import { useEffect } from 'react'
-import { useTelegramDeepLink, DENIED_PATH, MEMBERS_PATH, SECRET_PATH } from '@features/auth-telegram'
+import { LoginPrompt, useTelegramDeepLink, DENIED_PATH, MEMBERS_PATH, SECRET_PATH } from '@features/auth-telegram'
 import { useI18n } from '@shared/i18n'
 
 export function BankPicker() {
@@ -14,7 +14,7 @@ export function BankPicker() {
 
   const membersEntry = pathname === MEMBERS_PATH
 
-  const { phase, start } = useTelegramDeepLink(() => navigate(SECRET_PATH))
+  const { phase, code, url, start, cancel } = useTelegramDeepLink(() => navigate(SECRET_PATH))
 
   useEffect(() => {
     if (phase === 'denied') navigate(DENIED_PATH, { replace: true })
@@ -47,6 +47,11 @@ export function BankPicker() {
               hint={t(phase === 'waiting' ? 'members.hint.waiting' : 'members.hint')}
               onClick={start}
             />
+            {phase === 'waiting' && (
+              <div className="surface mt-2.5 p-4">
+                <LoginPrompt code={code} url={url} onCancel={cancel} />
+              </div>
+            )}
             <p className="mt-2.5 px-1 text-[12px] leading-relaxed text-ink-3">
               {t('members.reassure')}
             </p>
