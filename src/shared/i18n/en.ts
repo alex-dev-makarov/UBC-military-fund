@@ -178,7 +178,7 @@ export const en: Dict = {
 
   'private.deeplink.cta': 'Sign in with Telegram',
   'private.deeplink.waiting':
-    'Remember this number. Open Telegram, press Start and pick it — this page updates by itself.',
+    'Open Telegram → press «Start» → pick the number {code}. This page updates by itself.',
   'private.deeplink.open': 'Open Telegram',
   'private.deeplink.code': 'your number',
   'secret.logout': 'Sign out',

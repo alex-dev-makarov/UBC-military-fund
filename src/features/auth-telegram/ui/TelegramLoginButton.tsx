@@ -29,7 +29,7 @@ export function LoginPrompt({
           <span className="num text-[38px] font-extrabold leading-none tracking-[.04em]">{code}</span>
         </div>
       )}
-      <p className="text-center text-[12.5px] leading-relaxed text-ink-3">{t('private.deeplink.waiting')}</p>
+      <p className="text-center text-[12.5px] leading-relaxed text-ink-3">{t('private.deeplink.waiting', { code: code ?? '' })}</p>
       {url && (
         <a
           href={url}

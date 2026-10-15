@@ -176,7 +176,7 @@ export const uk = {
 
   'private.deeplink.cta': 'Увійти через Telegram',
   'private.deeplink.waiting':
-    'Запамʼятайте це число. Відкрийте Telegram, натисніть «Почати» і виберіть його — сторінка оновиться сама.',
+    'Відкрийте Telegram → натисніть «Start» («Почати») → виберіть число {code}. Сторінка оновиться сама.',
   'private.deeplink.open': 'Відкрити Telegram',
   'private.deeplink.code': 'ваше число',
   'secret.logout': 'Вийти',
