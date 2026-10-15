@@ -2,6 +2,7 @@ import { defineConfig, loadEnv, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { fileURLToPath, URL } from 'node:url'
+import { API_URL, LOCAL_API, isSiteMode } from './src/shared/config/sites'
 
 const src = (path: string) => fileURLToPath(new URL(`./src/${path}`, import.meta.url))
 
@@ -31,34 +32,19 @@ function preloadFont(): Plugin {
     }
   }
 
-  // All site settings live here. The only thing outside git is the bot names in .env.
-  const API_URL: Record<string, string> = {
-    development: '/api',
-    dev: 'https://api-dev.ubc-military-fund.com',
-    production: 'https://api.ubc-military-fund.com',
-  }
-  const LOCAL_API = 'http://localhost:3001'
-
-  function siteEnv(mode: string) {
-    const env = loadEnv(mode, process.cwd(), 'VITE_')
-    const apiUrl = API_URL[mode]
-    const bot = mode === 'development' ? env.VITE_TELEGRAM_BOT_LOCAL : env.VITE_TELEGRAM_BOT
-    if (!apiUrl) throw new Error(`unknown mode "${mode}", expected: ${Object.keys(API_URL).join(', ')}`)
-    if (!bot) {
-      const key = mode === 'development' ? 'VITE_TELEGRAM_BOT_LOCAL' : 'VITE_TELEGRAM_BOT'
+  function checkEnv(mode: string) {
+    if (!isSiteMode(mode)) {
+      throw new Error(`unknown mode "${mode}", expected: ${Object.keys(API_URL).join(', ')}`)
+    }
+    const key = mode === 'development' ? 'VITE_TELEGRAM_BOT_LOCAL' : 'VITE_TELEGRAM_BOT'
+    if (!loadEnv(mode, process.cwd(), 'VITE_')[key]) {
       throw new Error(`${key} is not set — add it to .env (see .env.example)`)
     }
-    return { apiUrl, bot }
   }
 
   export default defineConfig(({ mode }) => {
-    const { apiUrl, bot } = siteEnv(mode)
+    checkEnv(mode)
     return {
-    define: {
-      'import.meta.env.VITE_API_URL': JSON.stringify(apiUrl),
-      'import.meta.env.VITE_TELEGRAM_BOT': JSON.stringify(bot),
-    },
-
     plugins: [
       react({
         babel: { plugins: [['babel-plugin-react-compiler', {}]] },

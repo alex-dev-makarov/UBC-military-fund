@@ -5,6 +5,7 @@ import {
   type AuthUser,
   getFetchErrorStatus,
 } from '@shared/api'
+import { config } from '@shared/config'
 
 type Phase = 'idle' | 'waiting' | 'authorized' | 'denied' | 'expired' | 'error'
 
@@ -137,7 +138,7 @@ export function useTelegramDeepLink(onAuthorized: (user: AuthUser) => void): Dee
     setCode(null)
   }
 
-  const url = nonce ? `https://t.me/${import.meta.env.VITE_TELEGRAM_BOT}?start=${nonce}` : null
+  const url = nonce ? `https://t.me/${config.telegramBot}?start=${nonce}` : null
 
   return { phase, url, code, start, cancel }
 }
