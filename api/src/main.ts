@@ -15,12 +15,10 @@ async function bootstrap() {
   app.use(securityHeaders(configService.get('APP_ENV', { infer: true }) !== 'local'));
   app.use(cookieParser());
 
-  const frontendOriginStr = configService.get('FRONTEND_ORIGIN', { infer: true });
-  if (!frontendOriginStr) {
+  const allowedOrigins = configService.get('ALLOWED_ORIGINS', { infer: true });
+  if (allowedOrigins.length === 0) {
     throw new Error('FRONTEND_ORIGIN is required (credentialed CORS cannot use a default)');
   }
-
-  const allowedOrigins = frontendOriginStr.split(',').map(origin => origin.trim());
 
   app.enableCors({
     origin: allowedOrigins,
