@@ -24,14 +24,13 @@ const child = spawn('node', ['dist/main'], {
       process.env.JWT_SECRET ?? randomBytes(48).toString('base64url'),
     TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN ?? '1:smoke',
     TELEGRAM_CHAT_ID: process.env.TELEGRAM_CHAT_ID ?? '-100',
-    FRONTEND_ORIGIN: 'http://localhost:5173',
+    PUBLIC_SITE_URL: 'http://localhost:5173',
     
     
     TELEGRAM_BOT_POLLING: 'false',
     
     
     
-    MEMBERSHIP_TTL_SEC: '60',
   },
   stdio: ['ignore', 'pipe', 'pipe'],
 });

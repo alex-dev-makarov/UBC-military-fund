@@ -1,5 +1,4 @@
 #!/bin/bash
-# Prod deploy on the server: `git pull && pnpm server:prod`. GitHub Actions runs the same.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
