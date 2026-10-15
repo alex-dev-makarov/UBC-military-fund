@@ -9,6 +9,7 @@ interface PollResponse {
 interface StartResponse {
   nonce: string
   code: number
+  url: string
 }
 
 interface HandoffResponse {

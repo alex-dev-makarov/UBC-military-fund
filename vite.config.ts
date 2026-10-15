@@ -1,4 +1,4 @@
-import { defineConfig, loadEnv, type Plugin } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { fileURLToPath, URL } from 'node:url'
@@ -35,10 +35,6 @@ function preloadFont(): Plugin {
   function checkEnv(mode: string) {
     if (!isSiteMode(mode)) {
       throw new Error(`unknown mode "${mode}", expected: ${Object.keys(API_URL).join(', ')}`)
-    }
-    const key = mode === 'development' ? 'VITE_TELEGRAM_BOT_LOCAL' : 'VITE_TELEGRAM_BOT'
-    if (!loadEnv(mode, process.cwd(), 'VITE_')[key]) {
-      throw new Error(`${key} is not set — add it to .env (see .env.example)`)
     }
   }
 

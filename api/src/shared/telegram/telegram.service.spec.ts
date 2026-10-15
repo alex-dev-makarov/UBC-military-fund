@@ -67,3 +67,28 @@ describe('TelegramService.checkGroupMembership', () => {
     expect(JSON.stringify(result)).not.toContain('AAH-test-token');
   });
 });
+
+describe('TelegramService.getBotUsername', () => {
+  it('asks Telegram once and caches the answer', async () => {
+    const fetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      json: async () => ({ ok: true, result: { username: 'my_bot' } }),
+    } as Response);
+    const telegram = new TelegramService();
+
+    expect(await telegram.getBotUsername(BOT_TOKEN)).toBe('my_bot');
+    expect(await telegram.getBotUsername(BOT_TOKEN)).toBe('my_bot');
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not cache a failure, so the next login retries', async () => {
+    const fetch = vi
+      .spyOn(globalThis, 'fetch')
+      .mockRejectedValueOnce(new Error('network down'))
+      .mockResolvedValueOnce({ json: async () => ({ ok: true, result: { username: 'my_bot' } }) } as Response);
+    const telegram = new TelegramService();
+
+    await expect(telegram.getBotUsername(BOT_TOKEN)).rejects.toThrow();
+    expect(await telegram.getBotUsername(BOT_TOKEN)).toBe('my_bot');
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+});

@@ -16,7 +16,6 @@ https://ubc-military-fund.com/
 ```bash
 git clone <репозиторій> ubc && cd ubc
 pnpm install
-cp .env.example .env              # імена СВОЇХ тестових ботів
 cp api/.env.example api/.env      # токен свого бота і свій JWT_SECRET (openssl rand -base64 48)
 pnpm docker:up                    # бекенд на localhost:3001
 pnpm private:demo                 # вигадані дані для закритого звіту

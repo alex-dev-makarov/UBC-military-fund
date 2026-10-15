@@ -9,6 +9,7 @@ import {
   Query,
   Req,
   Res,
+  ServiceUnavailableException,
   UnsupportedMediaTypeException,
   UseGuards,
 } from '@nestjs/common';
@@ -43,11 +44,16 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @UseGuards(RateLimitGuard)
   @RateLimit(10, 60_000)
-  startTelegramLogin(
+  async startTelegramLogin(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
-  ): { nonce: string; code: number; expiresIn: number } {
+  ): Promise<{ nonce: string; code: number; expiresIn: number; url: string }> {
     const origin = this.requireOrigin(req);
+    const bot = await this.telegram
+      .getBotUsername(this.config.get('TELEGRAM_BOT_TOKEN', { infer: true }))
+      .catch(() => {
+        throw new ServiceUnavailableException('Telegram is unavailable, try again');
+      });
     const ttlSec = this.config.get('LOGIN_NONCE_TTL_SEC', { infer: true });
     const { code, choices } = loginChoices();
     const binding = newBinding();
@@ -62,7 +68,12 @@ export class AuthController {
 
     res.cookie(this.bindingCookie(), binding.token, this.cookieOptions(ttlSec * 1000));
     this.securityLog.record('auth.start', { ip: this.ip(req) });
-    return { nonce: record.nonce, code, expiresIn: ttlSec };
+    return {
+      nonce: record.nonce,
+      code,
+      expiresIn: ttlSec,
+      url: `https://t.me/${bot}?start=${record.nonce}`,
+    };
   }
 
   @Get('telegram/poll')

@@ -3,6 +3,24 @@ import type { ChatMemberStatus, TelegramApiResponse, TelegramChatMember, Members
 
 @Injectable()
 export class TelegramService {
+  private botUsername: Promise<string> | null = null;
+
+  /** The bot's @username, asked from Telegram once and cached. */
+  getBotUsername(botToken: string): Promise<string> {
+    this.botUsername ??= fetch(`https://api.telegram.org/bot${botToken}/getMe`, {
+      signal: AbortSignal.timeout(10000),
+    })
+      .then((r) => r.json() as Promise<TelegramApiResponse<{ username?: string }>>)
+      .then((data) => {
+        if (!data.ok || !data.result?.username) throw new Error('Telegram getMe failed');
+        return data.result.username;
+      })
+      .catch((error: unknown) => {
+        this.botUsername = null;
+        throw error;
+      });
+    return this.botUsername;
+  }
 
   async checkGroupMembership(userId: number, chatId: number | string, botToken: string): Promise<MembershipResult> {
     const url = `https://api.telegram.org/bot${botToken}/getChatMember`;

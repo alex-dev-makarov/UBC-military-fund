@@ -9,7 +9,7 @@ const API_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const PORT = 3999;
 const BASE = `http://127.0.0.1:${PORT}`;
 
-const child = spawn('node', ['dist/main'], {
+const child = spawn('node', ['--import', './scripts/smoke-telegram-stub.mjs', 'dist/main'], {
   cwd: API_ROOT,
   env: {
     ...process.env,
@@ -112,6 +112,8 @@ try {
   check('login start returns a nonce and a two-digit code',
     start.status === 200 && typeof started.nonce === 'string' && started.code >= 10 && started.code <= 99,
     JSON.stringify(started));
+  check('login start returns the bot link for this nonce',
+    started.url === `https://t.me/smoke_bot?start=${started.nonce}`, started.url);
   check('login start binds the browser with an httpOnly cookie',
     /_login=/.test(binding) && /HttpOnly/i.test(binding), binding);
 
