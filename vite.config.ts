@@ -31,20 +31,34 @@ function preloadFont(): Plugin {
     }
   }
 
-  function checkDeployEnv(mode: string, command: string) {
-    if (command !== 'build' || mode === 'development') return
+  // All site settings live here. The only thing outside git is the bot names in .env.
+  const API_URL: Record<string, string> = {
+    development: '/api',
+    dev: 'https://api-dev.ubc-military-fund.com',
+    production: 'https://api.ubc-military-fund.com',
+  }
+  const LOCAL_API = 'http://localhost:3001'
+
+  function siteEnv(mode: string) {
     const env = loadEnv(mode, process.cwd(), 'VITE_')
-    const problems: string[] = []
-    if (!env.VITE_API_URL?.startsWith('https://')) problems.push(`VITE_API_URL must be https://…, got "${env.VITE_API_URL ?? ''}"`)
-    if (!env.VITE_TELEGRAM_BOT || /REPLACE|your_bot/i.test(env.VITE_TELEGRAM_BOT)) {
-      problems.push(`VITE_TELEGRAM_BOT is not set for mode "${mode}"`)
+    const apiUrl = API_URL[mode]
+    const bot = mode === 'development' ? env.VITE_TELEGRAM_BOT_LOCAL : env.VITE_TELEGRAM_BOT
+    if (!apiUrl) throw new Error(`unknown mode "${mode}", expected: ${Object.keys(API_URL).join(', ')}`)
+    if (!bot) {
+      const key = mode === 'development' ? 'VITE_TELEGRAM_BOT_LOCAL' : 'VITE_TELEGRAM_BOT'
+      throw new Error(`${key} is not set — add it to .env (see .env.example)`)
     }
-    if (problems.length) throw new Error(`.env.${mode}:\n  - ${problems.join('\n  - ')}`)
+    return { apiUrl, bot }
   }
 
-  export default defineConfig(({ mode, command }) => {
-    checkDeployEnv(mode, command)
+  export default defineConfig(({ mode }) => {
+    const { apiUrl, bot } = siteEnv(mode)
     return {
+    define: {
+      'import.meta.env.VITE_API_URL': JSON.stringify(apiUrl),
+      'import.meta.env.VITE_TELEGRAM_BOT': JSON.stringify(bot),
+    },
+
     plugins: [
       react({
         babel: { plugins: [['babel-plugin-react-compiler', {}]] },
@@ -89,7 +103,7 @@ function preloadFont(): Plugin {
       warmup: { clientFiles: ['./src/main.tsx', './src/app*.tsx', './src/pages*.tsx'] },
       proxy: {
         '/api': {
-          target: process.env.API_PROXY_TARGET ?? 'http://localhost:3000',
+          target: process.env.API_PROXY_TARGET ?? LOCAL_API,
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api/, ''),
         },
