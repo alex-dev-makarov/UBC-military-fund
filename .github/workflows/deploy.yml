@@ -19,13 +19,25 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 24.21.0  # same as NODE_VERSION in api/Dockerfile (what prod runs)
+          node-version: 24.21.0  
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter api test
 
+  ui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.21.0
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm build:dev
+
   deploy:
-    needs: test
+    needs: [test, ui]
     runs-on: ubuntu-latest
     environment: production
     steps:
