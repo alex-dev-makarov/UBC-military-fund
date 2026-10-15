@@ -34,7 +34,7 @@ jobs:
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
-      - run: pnpm build:dev
+      - run: pnpm build
 
   deploy:
     needs: [test, ui]
