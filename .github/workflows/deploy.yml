@@ -36,7 +36,7 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm build
         env:
-          VITE_TELEGRAM_BOT: ${{ secrets.PROD_TELEGRAM_BOT }}
+          VITE_TELEGRAM_BOT: ${{ secrets.VITE_TELEGRAM_BOT }}
 
   deploy:
     needs: [test, ui]
