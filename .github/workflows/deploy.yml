@@ -1,8 +1,5 @@
 name: Deploy API to prod
 
-# Every push to main: run the API tests, and only if they pass, deploy to the
-# server. The SSH key in secrets can do nothing on the server except run
-# deploy/server-deploy.sh (forced command), so a leaked key can't open a shell.
 on:
   push:
     branches: [main]
@@ -31,15 +28,18 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     environment: production
+    # Values come from GitHub → Settings → Secrets and variables → Actions.
     steps:
-      - name: Deploy over SSH
-        env:
-          SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
-          SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
-          SSH_KNOWN_HOSTS: ${{ secrets.PROD_SSH_KNOWN_HOSTS }}
+      - name: Save the deploy key
         run: |
-          mkdir -p ~/.ssh && chmod 700 ~/.ssh
-          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
-          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
-          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
-            "root@${SSH_HOST}" deploy
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PROD_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+      # Known fingerprint of our server, so we never talk to an impostor.
+      - name: Trust the server
+        run: echo "${{ secrets.PROD_SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+
+      # The key only runs deploy/server-deploy.sh on the server, nothing else.
+      - name: Deploy
+        run: ssh -i ~/.ssh/deploy_key root@${{ secrets.PROD_SSH_HOST }}
