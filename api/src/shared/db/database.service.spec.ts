@@ -19,14 +19,12 @@ describe('DatabaseService', () => {
     expect(tables).toEqual([
       'fund_categories',
       'fund_meta',
-      'fund_months',
-      'fund_recent',
       'fund_regions',
-      'fund_years',
       'handoff_tokens',
       'login_nonces',
       'private_expenses',
       'private_meta',
+      'private_year_categories',
       'private_years',
       'report_views',
       'schema_migrations',
@@ -73,6 +71,7 @@ describe('DatabaseService', () => {
       '0012_report_views',
       '0013_login_confirm',
       '0014_security_hardening',
+      '0015_unified_ledger',
     ]);
   });
 });

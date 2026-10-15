@@ -12,6 +12,8 @@ interface ExpenseRow {
   id: number;
   date: string;
   item: string;
+  item_en: string | null;
+  category: string | null;
   person: string | null;
   note: string | null;
   price: number;
@@ -56,6 +58,8 @@ export class LedgerRepository {
       return {
         date: row.date,
         item,
+        itemEn: text(row.itemEn),
+        category: text(row.category),
         person: text(row.person),
         note: text(row.note),
         price,
@@ -70,26 +74,41 @@ export class LedgerRepository {
         row.summaryTotal === undefined || row.summaryTotal === null
           ? null
           : amount(row.summaryTotal, 'summaryTotal', i);
-      return { year: row.year, summary, hasReceipt: row.hasReceipt === true };
+      const categories = Object.entries(row.categories ?? {}).map(([category, value]) => {
+        if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+          throw new Error(`years[${i}].categories.${category} must be a non-negative number`);
+        }
+        return { category, amount: value };
+      });
+      return { year: row.year, summary, hasReceipt: row.hasReceipt === true, categories };
     });
 
     const db = this.database.connection;
     db.exec('BEGIN');
     try {
-      db.exec('DELETE FROM private_expenses; DELETE FROM private_years; DELETE FROM private_meta;');
+      db.exec(
+        'DELETE FROM private_expenses; DELETE FROM private_years; DELETE FROM private_year_categories; DELETE FROM private_meta;',
+      );
       const insertYear = db.prepare(
         'INSERT INTO private_years (year, summary_total, has_receipt) VALUES (?, ?, ?)',
       );
-      for (const y of years) insertYear.run(y.year, y.summary, y.hasReceipt ? 1 : 0);
+      const insertYearCategory = db.prepare(
+        'INSERT INTO private_year_categories (year, category, amount) VALUES (?, ?, ?)',
+      );
+      for (const y of years) {
+        insertYear.run(y.year, y.summary, y.hasReceipt ? 1 : 0);
+        for (const c of y.categories) insertYearCategory.run(y.year, c.category, c.amount);
+      }
 
       const insertExpense = db.prepare(
         `INSERT INTO private_expenses
-           (date, item, person, note, price, delivery, commission, has_receipt)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+           (date, item, item_en, category, person, note, price, delivery, commission, has_receipt)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       );
       for (const e of expenses) {
         insertExpense.run(
-          e.date, e.item, e.person, e.note, e.price, e.delivery, e.commission, e.hasReceipt ? 1 : 0,
+          e.date, e.item, e.itemEn, e.category, e.person, e.note,
+          e.price, e.delivery, e.commission, e.hasReceipt ? 1 : 0,
         );
       }
       if (source.generatedAt) {
@@ -112,15 +131,30 @@ export class LedgerRepository {
       .prepare("SELECT value FROM private_meta WHERE key = 'generatedAt'")
       .get() as { value: string } | undefined;
     const years = db.prepare('SELECT * FROM private_years ORDER BY year').all() as unknown as YearRow[];
+    const yearCategories = db
+      .prepare('SELECT year, category, amount FROM private_year_categories ORDER BY year, category')
+      .all() as Array<{ year: number; category: string; amount: number }>;
     const rows = db
       .prepare('SELECT * FROM private_expenses ORDER BY date, id')
       .all() as unknown as ExpenseRow[];
     return {
       ...(meta ? { generatedAt: meta.value } : {}),
-      years: years.map((y) => ({ year: y.year, summaryTotal: y.summary_total, hasReceipt: y.has_receipt === 1 })),
+      years: years.map((y) => {
+        const split = yearCategories.filter((c) => c.year === y.year);
+        return {
+          year: y.year,
+          summaryTotal: y.summary_total,
+          hasReceipt: y.has_receipt === 1,
+          ...(split.length > 0
+            ? { categories: Object.fromEntries(split.map((c) => [c.category, c.amount])) }
+            : {}),
+        };
+      }),
       expenses: rows.map((r) => ({
         date: r.date,
         item: r.item,
+        itemEn: r.item_en,
+        category: r.category,
         person: r.person,
         note: r.note,
         price: r.price,
@@ -129,6 +163,17 @@ export class LedgerRepository {
         hasReceipt: r.has_receipt === 1,
       })),
     };
+  }
+
+  /** Rows the public report can't place in a category (they fall back to «Інше»). */
+  countUncategorized(): number {
+    const row = this.database.connection
+      .prepare(
+        `SELECT count(*) AS c FROM private_expenses
+          WHERE category IS NULL OR category NOT IN (SELECT name_uk FROM fund_categories)`,
+      )
+      .get() as { c: number };
+    return row.c;
   }
 
   getReport(): PrivateReport {

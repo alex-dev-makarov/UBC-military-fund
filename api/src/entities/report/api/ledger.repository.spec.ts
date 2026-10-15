@@ -56,12 +56,21 @@ describe('LedgerRepository', () => {
   it('exports exactly what replaceAll accepts (round trip)', () => {
     repo.replaceAll({
       generatedAt: '2026-10-11',
-      years: [{ year: 2025, summaryTotal: 7, hasReceipt: true }],
-      expenses: [{ date: '2026-05-06', item: 'Item A', person: 'Person A', price: 1000, commission: 10, hasReceipt: true }],
+      years: [{ year: 2025, summaryTotal: 7, hasReceipt: true, categories: { 'Авто': 5, 'Інше': 2 } }],
+      expenses: [
+        {
+          date: '2026-05-06', item: 'Item A', itemEn: 'Item A (en)', category: 'Авто',
+          person: 'Person A', price: 1000, commission: 10, hasReceipt: true,
+        },
+      ],
     });
     const before = repo.getReport();
+    const exported = repo.exportAll();
+    expect(exported.years![0]!.categories).toEqual({ 'Авто': 5, 'Інше': 2 });
+    expect(exported.expenses[0]).toMatchObject({ itemEn: 'Item A (en)', category: 'Авто' });
     const other = makeRepo();
-    other.replaceAll(repo.exportAll());
+    other.replaceAll(exported);
     expect(other.getReport()).toEqual(before);
+    expect(other.exportAll()).toEqual(exported);
   });
 });

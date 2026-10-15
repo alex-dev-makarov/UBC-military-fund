@@ -194,92 +194,66 @@ pnpm server:dev:logs                 # логи
 
 ## 4. Підтримка
 
-### Як вручну додати нову витрату (через SQL)
+### Як додати або змінити витрату
 
-Поки що витрати додаються руками, автоматизацію зробимо пізніше. Кожна витрата
-записується **в два місця**:
+Усі витрати живуть в **одній** таблиці `private_expenses`. З неї рахуються обидва звіти:
 
-| Куди | Таблиці | Хто бачить |
+| Звіт | Що бере з `private_expenses` | Хто бачить |
 |---|---|---|
-| Закритий звіт | `private_expenses` | лише члени церкви, з іменем людини |
-| Публічний звіт | `fund_years`, `fund_months`, `fund_categories`, `fund_recent` | усі, **без імен** |
+| Закритий | усе, з іменем людини (`person`) і приміткою (`note`) | лише члени NEST |
+| Публічний | роки, місяці (останнього року), категорії, 10 останніх витрат, **без** `person` і `note` | усі |
 
-Команди виконуються з папки проєкту, коли бекенд запущений. Локально це просто
-`pnpm db "..."`. На сервері спершу наведи команди на потрібне оточення:
-`set -a; . deploy/prod.env; set +a`, далі так само `pnpm db "..."`. Одна команда — один SQL-запит. Зовнішні лапки подвійні, текст
-усередині в одинарних. Сайт показує зміни одразу.
+Тож витрата вноситься **один раз**, і суми не можуть розійтися.
 
-**Приклад:** Петренко, 5 000 ₴, «Ремонт авто», 12.10.2026,
-категорія «Авто», чек є.
+**Найзручніше — `pnpm expense:add`** (з папки проєкту, Docker не потрібен): питає по черзі
+дату, назву, категорію (зі списку), людину (зі списку наявних), суми й чек, показує підсумок і
+записує після «т». Дату «станом на» оновлює сама.
 
-**Крок 1 — закритий звіт (з іменем):**
+**Або руками в таблиці** (DB Browser for SQLite або TablePlus):
+відкрити `api/data/ubc.sqlite` → таблиця `private_expenses` → додати рядок → зберегти
+(Write Changes) → оновити сайт.
+
+| Колонка | Що писати |
+|---|---|
+| `date` | `РРРР-ММ-ДД` |
+| `item` | назва українською. **Видно публічно** в «Останніх витратах» |
+| `item_en` | назва англійською для англійської версії сайту; порожньо → покажеться українська |
+| `category` | точно одне з: `Авто`, `Техніка та аксесуари`, `Військові речі`, `Інше`. Порожньо чи з помилкою → піде в «Інше» |
+| `person` | ім'я **точно як уже записано** (інакше з'явиться нова людина); загальна витрата → порожньо (NULL) |
+| `note` | примітка лише для закритого звіту, напр. `позика`; або порожньо |
+| `price`, `delivery`, `commission` | ціна, доставка, комісія банку (або `0`). Публічна сума = їх сума |
+| `has_receipt` | `1` чек є, `0` немає |
+
+Те саме однією командою (локально, бекенд запущений):
 ```bash
-pnpm db --write "INSERT INTO private_expenses (date, item, person, note, price, delivery, commission, has_receipt) VALUES ('2026-10-12', 'Ремонт авто', 'Петренко', NULL, 5000, 0, 0, 1)"
-```
-- `date` — `РРРР-ММ-ДД`;
-- `person` — ім'я **точно так, як уже записано** (як у колонці `person`; список: `pnpm db "SELECT DISTINCT person FROM private_expenses"`).
-  Інше написання з'явиться як нова людина. Якщо витрата загальна, `NULL`;
-- `note` — примітка, наприклад `'позика'`, або `NULL`;
-- `delivery`, `commission` — доставка й комісія банку, або `0`;
-- `has_receipt` — `1` чек є, `0` немає.
-
-**Крок 2 — публічний звіт (без імен), 4 команди:**
-```bash
-# рік
-pnpm db --write "UPDATE fund_years SET amount = amount + 5000 WHERE year = '2026'"
-# місяць (10 = жовтень); якщо місяця ще немає — створиться
-pnpm db --write "INSERT INTO fund_months (month, amount) VALUES (10, 5000) ON CONFLICT(month) DO UPDATE SET amount = amount + excluded.amount"
-# категорія: 'Авто' | 'Техніка та аксесуари' | 'Військові речі' | 'Інше'
-pnpm db --write "UPDATE fund_categories SET amount = amount + 5000 WHERE name_uk = 'Авто'"
-# рядок у «Останні витрати» (без імені!)
-pnpm db --write "INSERT INTO fund_recent (date, title_uk, title_en, amount, sort) VALUES ('2026-10-12', 'Ремонт авто', 'Car repair', 5000, 0)"
-```
-Суму в публічній частині пишемо **разом з комісією й доставкою**: як `price + delivery + commission`.
-
-**Крок 3 — дата «станом на» під закритим звітом:**
-```bash
+pnpm db --write "INSERT INTO private_expenses (date, item, item_en, category, person, note, price, delivery, commission, has_receipt) VALUES ('2026-10-12', 'Ремонт авто', 'Car repair', 'Авто', 'Петренко', NULL, 5000, 0, 0, 1)"
 pnpm db --write "INSERT OR REPLACE INTO private_meta (key, value) VALUES ('generatedAt', '2026-10-12')"
 ```
-
-**Крок 4 — перевірити, що закрита й публічна частини зійшлися:**
-```bash
-pnpm db "SELECT (SELECT round(sum(price + delivery + commission), 2) FROM private_expenses WHERE date LIKE '2026-%') AS private_2026, (SELECT amount FROM fund_years WHERE year = '2026') AS public_2026"
-```
-Два числа мають бути однакові. Потім відкрити сайт і подивитися.
-
-### Виправити або видалити витрату
-
-```bash
-# знайти id
-pnpm db "SELECT id, date, item, person, price, commission FROM private_expenses ORDER BY date"
-
-# виправити (у закритій частині)
-pnpm db --write "UPDATE private_expenses SET price = 5200 WHERE id = 21"
-pnpm db --write "UPDATE private_expenses SET person = 'Петренко' WHERE person = 'П. Петренко'"
-
-# видалити
-pnpm db --write "DELETE FROM private_expenses WHERE id = 21"
-```
-Змінилась сума — так само виправ публічні таблиці з кроку 2: відніми стару суму
-і додай нову. Потім крок 4.
+`generatedAt` — дата «станом на» під закритим звітом.
 
 Корисне:
 ```bash
-pnpm db                                   # список таблиць і скільки в них рядків
-pnpm db "SELECT * FROM fund_recent ORDER BY date DESC"
-pnpm db "SELECT * FROM fund_months"
+pnpm db "SELECT DISTINCT person FROM private_expenses"           # як записані імена
+pnpm db "SELECT id, date, item, category, price FROM private_expenses ORDER BY date DESC"
+pnpm db "SELECT * FROM private_expenses WHERE category IS NULL"   # без категорії
+pnpm db --write "UPDATE private_expenses SET price = 5200 WHERE id = 21"
+pnpm db --write "DELETE FROM private_expenses WHERE id = 21"
 ```
-Рік без розбивки, як 2025, — це рядок у `private_years` із `summary_total`.
+
+Рік без розбивки, як 2025, — це рядок у `private_years` із `summary_total`; його
+розподіл по категоріях для публічного звіту — у `private_year_categories`.
+Регіони, банка й картка — у `fund_regions` і `fund_meta`, назви й кольори категорій — у `fund_categories`.
+
+**Перенести на prod** (з Mac; локальний сервер і бот запускати не треба; повністю
+замінює дані витрат на проді, журнали входів і переглядів не чіпає):
+```bash
+docker compose run --rm -T api node scripts/private.mjs export | ssh root@165.22.80.221 'cd ubc && set -a && . deploy/prod.env && set +a && docker compose exec -T api node scripts/private.mjs import'
+```
 
 > Перед масовими змінами на проді зроби копію бази:
 > `cp api/data/ubc.sqlite ~/ubc-backup-$(date +%F).sqlite`. У ній імена,
 > тож зберігай копію тільки на сервері або зашифрованою.
 
-**Перенести дані з локальної бази на прод** (одним пайпом, файл ніде не
-зберігається; повністю замінює закриті дані на проді):
-```bash
-pnpm -s private:export | ssh <server> 'cd ubc && set -a && . deploy/prod.env && set +a && docker compose exec -T api node scripts/private.mjs import'
-```
 
 ### Журнал переглядів: хто відкривав звіт
 

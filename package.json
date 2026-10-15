@@ -24,6 +24,7 @@
     "docker:reset": "docker compose down && rm -f api/data/ubc.sqlite* && docker compose up -d --build --wait && docker compose exec -T api node scripts/seed.mjs && pnpm private:demo",
     "docker:logs": "docker compose logs -f api",
     "db": "node scripts/db.mjs",
+    "expense:add": "node scripts/expense-add.mjs",
     "db:seed": "pnpm --filter api db:seed",
     "private:export": "docker compose exec -T api node scripts/private.mjs export",
     "views": "docker compose exec -T api node scripts/views.mjs",

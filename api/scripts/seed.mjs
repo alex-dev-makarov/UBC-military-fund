@@ -19,8 +19,8 @@ try {
   } else {
     const result = fund.getPublicFund();
     console.log(
-      `засіяно: regions ${result.regions.length} · categories ${result.categories.length} · ` +
-        `years ${result.years.length} · months ${result.months.length} · recent ${result.recent.length}`,
+      `засіяно: regions ${result.regions.length} · categories ${result.categories.length} ` +
+        '(суми рахуються з private_expenses)',
     );
   }
 } finally {

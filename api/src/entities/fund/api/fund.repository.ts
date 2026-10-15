@@ -8,7 +8,20 @@ interface MetaRow {
   value: string;
 }
 
+interface PublicExpenseRow {
+  date: string;
+  item: string;
+  item_en: string | null;
+  category: string | null;
+  total: number;
+}
+
+const RECENT_LIMIT = 10;
+
+const FALLBACK_CATEGORY = 'Інше';
+
 const asRows = <T>(rows: unknown): T[] => rows as T[];
+const cents = (value: number) => Math.round(value * 100) / 100;
 
 @Injectable()
 export class FundRepository {
@@ -31,23 +44,10 @@ export class FundRepository {
       FUND_SEED.regions.forEach((item, i) => region.run(item.uk, item.en, i));
 
       const category = db.prepare(
-        'INSERT INTO fund_categories (name_uk, name_en, amount, color, sort) VALUES (?, ?, ?, ?, ?)',
+        'INSERT INTO fund_categories (name_uk, name_en, color, sort) VALUES (?, ?, ?, ?)',
       );
       FUND_SEED.categories.forEach((item, i) =>
-        category.run(item.name.uk, item.name.en, item.amount, item.color, i),
-      );
-
-      const year = db.prepare('INSERT INTO fund_years (year, amount) VALUES (?, ?)');
-      FUND_SEED.years.forEach((item) => year.run(item.year, item.amount));
-
-      const month = db.prepare('INSERT INTO fund_months (month, amount) VALUES (?, ?)');
-      FUND_SEED.months.forEach(([m, amount]) => month.run(m, amount));
-
-      const recent = db.prepare(
-        'INSERT INTO fund_recent (date, title_uk, title_en, amount, sort) VALUES (?, ?, ?, ?, ?)',
-      );
-      FUND_SEED.recent.forEach((item, i) =>
-        recent.run(item.date, item.title.uk, item.title.en, item.amount, i),
+        category.run(item.name.uk, item.name.en, item.color, i),
       );
 
       db.exec('COMMIT');
@@ -74,38 +74,78 @@ export class FundRepository {
         .all() as Array<{ name_uk: string; name_en: string }>
     ).map((row): Loc => ({ uk: row.name_uk, en: row.name_en }));
 
-    const categories = (
+    const categoryRows = db
+      .prepare('SELECT name_uk, name_en, color FROM fund_categories ORDER BY sort')
+      .all() as Array<{ name_uk: string; name_en: string; color: string }>;
+
+
+    const summarized = new Map(
+      (
+        db
+          .prepare('SELECT year, summary_total FROM private_years WHERE summary_total IS NOT NULL')
+          .all() as Array<{ year: number; summary_total: number }>
+      ).map((row) => [String(row.year), row.summary_total]),
+    );
+
+    const expenses = (
       db
-        .prepare('SELECT name_uk, name_en, amount, color FROM fund_categories ORDER BY sort')
-        .all() as Array<{ name_uk: string; name_en: string; amount: number; color: string }>
-    ).map(
+        .prepare(
+          `SELECT date, item, item_en, category, price + delivery + commission AS total
+             FROM private_expenses
+            ORDER BY date DESC, id DESC`,
+        )
+        .all() as unknown as PublicExpenseRow[]
+    ).filter((row) => !summarized.has(row.date.slice(0, 4)));
+
+    const yearTotals = new Map<string, number>(summarized);
+    for (const e of expenses) {
+      const year = e.date.slice(0, 4);
+      yearTotals.set(year, (yearTotals.get(year) ?? 0) + e.total);
+    }
+    const years = [...yearTotals]
+      .map(([year, amount]): YearTotal => ({ year, amount: cents(amount) }))
+      .sort((a, b) => a.year.localeCompare(b.year));
+
+
+    const latestYear = expenses[0]?.date.slice(0, 4);
+    const monthTotals = new Map<number, number>();
+    for (const e of expenses) {
+      if (e.date.slice(0, 4) !== latestYear) continue;
+      const month = Number(e.date.slice(5, 7));
+      monthTotals.set(month, (monthTotals.get(month) ?? 0) + e.total);
+    }
+    const months = [...monthTotals]
+      .sort((a, b) => a[0] - b[0])
+      .map(([month, amount]): [number, number] => [month, cents(amount)]);
+
+    const known = new Set(categoryRows.map((row) => row.name_uk));
+    const fallback = known.has(FALLBACK_CATEGORY)
+      ? FALLBACK_CATEGORY
+      : categoryRows[categoryRows.length - 1]?.name_uk;
+    const categoryTotals = new Map<string, number>();
+    const addToCategory = (name: string | null, amount: number) => {
+      const key = name && known.has(name) ? name : fallback;
+      if (key) categoryTotals.set(key, (categoryTotals.get(key) ?? 0) + amount);
+    };
+    for (const e of expenses) addToCategory(e.category, e.total);
+    for (const row of db
+      .prepare('SELECT year, category, amount FROM private_year_categories')
+      .all() as Array<{ year: number; category: string; amount: number }>) {
+      if (summarized.has(String(row.year))) addToCategory(row.category, row.amount);
+    }
+    const categories = categoryRows.map(
       (row): SpendCategory => ({
         name: { uk: row.name_uk, en: row.name_en },
-        amount: row.amount,
+        amount: cents(categoryTotals.get(row.name_uk) ?? 0),
         color: row.color,
       }),
     );
 
-    const years = asRows<YearTotal>(
-      db.prepare('SELECT year, amount FROM fund_years ORDER BY year').all(),
-    );
-
-    const months = (
-      db.prepare('SELECT month, amount FROM fund_months ORDER BY month').all() as Array<{
-        month: number;
-        amount: number;
-      }>
-    ).map((row): [number, number] => [row.month, row.amount]);
-
-    const recent = (
-      db
-        .prepare('SELECT date, title_uk, title_en, amount FROM fund_recent ORDER BY date DESC, sort')
-        .all() as Array<{ date: string; title_uk: string; title_en: string; amount: number }>
-    ).map(
+    const recent = expenses.slice(0, RECENT_LIMIT).map(
       (row): SpendItem => ({
         date: row.date,
-        title: { uk: row.title_uk, en: row.title_en },
-        amount: row.amount,
+        title: { uk: row.item, en: row.item_en ?? row.item },
+        amount: cents(row.total),
       }),
     );
 

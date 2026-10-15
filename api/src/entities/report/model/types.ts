@@ -44,10 +44,18 @@ export interface PrivateReportView extends PrivateReport {
 
 export interface LedgerImport {
   generatedAt?: string;
-  years?: Array<{ year: number; summaryTotal?: number | null; hasReceipt?: boolean }>;
+  years?: Array<{
+    year: number;
+    summaryTotal?: number | null;
+    hasReceipt?: boolean;
+    // Category split of a summary-only year, e.g. { "Авто": 52311.73 }.
+    categories?: Record<string, number>;
+  }>;
   expenses: Array<{
     date: string;
     item: string;
+    itemEn?: string | null;
+    category?: string | null;
     person?: string | null;
     note?: string | null;
     price: number;
