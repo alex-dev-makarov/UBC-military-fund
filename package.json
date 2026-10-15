@@ -29,7 +29,7 @@
     "private:export": "docker compose exec -T api node scripts/private.mjs export",
     "views": "docker compose exec -T api node scripts/views.mjs",
     "server:dev": "docker compose --env-file deploy/dev.env -f docker-compose.yml -f docker-compose.server.yml up -d --build --wait",
-    "server:prod": "docker compose --env-file deploy/prod.env -f docker-compose.yml -f docker-compose.server.yml up -d --build --wait",
+    "server:prod": "bash deploy/server-deploy.sh",
     "server:dev:logs": "docker compose --env-file deploy/dev.env -f docker-compose.yml -f docker-compose.server.yml logs -f",
     "server:prod:logs": "docker compose --env-file deploy/prod.env -f docker-compose.yml -f docker-compose.server.yml logs -f",
     "private:demo": "docker compose exec -T api node scripts/private.mjs demo"
