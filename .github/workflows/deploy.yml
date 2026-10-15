@@ -44,7 +44,7 @@ jobs:
           retention-days: 7
 
   deploy-api:
-    needs: [test, ui]
+    needs: test
     runs-on: ubuntu-latest
     environment: production
     steps:
@@ -61,7 +61,7 @@ jobs:
         run: ssh -i ~/.ssh/deploy_key root@${{ secrets.PROD_SSH_HOST }}
 
   deploy-web:
-    needs: deploy-api
+    needs: [ui, deploy-api]
     runs-on: ubuntu-latest
     environment: production
     steps:
