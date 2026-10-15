@@ -1,6 +1,5 @@
 export { api } from './baseApi'
-export { endpoints } from './endpoints'
-export { getFetchErrorStatus, isFetchErrorWithStatus } from './apiError'
+export { getFetchErrorStatus } from './apiError'
 export {
   useGetPublicReportQuery,
   useGetSecretReportQuery,

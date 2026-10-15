@@ -5,7 +5,3 @@ export function getFetchErrorStatus(error: unknown): number | null {
   }
   return null
 }
-
-export function isFetchErrorWithStatus(error: unknown, status: number): boolean {
-  return getFetchErrorStatus(error) === status
-}

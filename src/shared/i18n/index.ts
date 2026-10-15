@@ -1,5 +1,5 @@
 export { I18nProvider, useI18n, useT, type Translate } from './context'
 export { Rich } from './Rich'
-export { makeFmt, type Fmt, type PluralKey } from './format'
-export { langs, locales, isLang, type Lang, type Loc } from './types'
+export { type Fmt, type PluralKey } from './format'
+export { langs, locales, type Lang, type Loc } from './types'
 export type { Dict, TKey } from './uk'

@@ -15,7 +15,7 @@ interface HandoffResponse {
   user: AuthUser
 }
 
-export const endpoints = api.injectEndpoints({
+const endpoints = api.injectEndpoints({
   endpoints: (build) => ({
     getPublicReport: build.query<PublicFund, void>({
       query: () => '/report/public',
