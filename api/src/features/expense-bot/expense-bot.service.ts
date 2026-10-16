@@ -531,7 +531,7 @@ export class ExpenseBotService {
   private async confirmDelete(message: BotMessageRef, id: number): Promise<void> {
     const e = this.ledger.get(id);
     if (!e) return void (await this.bot.edit(message, 'Цієї витрати вже немає.'));
-    await this.bot.edit(message, `Видалити?\n${short(e)}${e.person ? ` · ${e.person}` : ''}\nФайли чеків на Диску залишаться.`, [
+    await this.bot.edit(message, `Видалити?\n${short(e)}${e.person ? ` · ${e.person}` : ''}${this.ledger.files(id).length ? '\nЧеки й фото буде переміщено в кошик Google Диска.' : ''}`, [
       [{ text: '🗑 Видалити', callback_data: `x:dd:${id}` }, { text: 'Скасувати', callback_data: 'x:no' }],
     ]);
   }
@@ -539,14 +539,20 @@ export class ExpenseBotService {
   private async remove(message: BotMessageRef, telegramId: number, id: number): Promise<void> {
     const e = this.ledger.get(id);
     if (!e) return void (await this.bot.edit(message, 'Цієї витрати вже немає.'));
+    const files = this.ledger.files(id);
     this.database.backup('bot');
     this.ledger.remove(id);
-    this.securityLog.record('expense.delete', { admin: telegramId, id, item: e.item, total: e.total });
+    this.securityLog.record('expense.delete', { admin: telegramId, id, item: e.item, total: e.total, files: files.length });
     await this.bot.edit(message, `🗑 Видалено: ${short(e)}`);
     if (!this.google.enabled) return;
     await this.google.deleteRow(id).catch(async (error) => {
       await this.bot.send(message.chat.id, `⚠️ Рядок у Google Таблиці не видалено: ${this.reason(error)}. Видаліть рядок з ID ${id} вручну.`);
     });
+    const failed: string[] = [];
+    for (const f of files) await this.google.trash(f.url).catch(() => failed.push(f.name));
+    if (failed.length) {
+      await this.bot.send(message.chat.id, `⚠️ Не вдалося перемістити в кошик: ${failed.join(', ')}. Видаліть їх на Диску вручну.`);
+    }
   }
 
   private async showLast(chatId: number): Promise<void> {

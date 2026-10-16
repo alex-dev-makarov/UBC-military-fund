@@ -244,7 +244,9 @@ export class LedgerRepository {
   }
 
   remove(id: number): boolean {
-    const { changes } = this.database.connection.prepare('DELETE FROM private_expenses WHERE id = ?').run(id);
+    const db = this.database.connection;
+    const { changes } = db.prepare('DELETE FROM private_expenses WHERE id = ?').run(id);
+    db.prepare('DELETE FROM private_expense_files WHERE expense_id = ?').run(id);
     if (changes > 0) this.touch();
     return changes > 0;
   }
