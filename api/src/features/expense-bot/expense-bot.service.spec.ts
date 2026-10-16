@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { DatabaseService } from '../../shared/db';
 import { FundRepository } from '../../entities/fund';
 import { LedgerRepository } from '../../entities/report';
-import { ExpenseBotService } from './expense-bot.service';
+import { ExpenseBotService, parseDate } from './expense-bot.service';
 
 const ADMIN = 111;
 const STRANGER = 222;
@@ -95,9 +95,9 @@ describe('ExpenseBotService', () => {
 
   it('rejects bad input and asks again', async () => {
     await t.say('/add');
-    await t.say('12.10.2026');
-    expect(t.sent.at(-2)!.text).toContain('2026-10-16');
-    await t.say('2026-02-31');
+    await t.say('31.02.2026');
+    expect(t.sent.at(-2)!.text).toContain('⚠️');
+    await t.say('завтра');
     expect(t.sent.at(-2)!.text).toContain('⚠️');
   });
 
@@ -170,3 +170,24 @@ describe('ExpenseBotService', () => {
     expect(g.ledger.recent(1)[0]).toMatchObject({ item: 'X', total: 100, hasReceipt: false });
   });
 });
+
+describe('parseDate', () => {
+  const year = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Kyiv' }).slice(0, 4);
+  it.each([
+    ['2026-10-12', '2026-10-12'],
+    ['2026-1-5', '2026-01-05'],
+    ['12.10.2026', '2026-10-12'],
+    ['5.1.2026', '2026-01-05'],
+    ['12/10/2026', '2026-10-12'],
+    ['12.10.26', '2026-10-12'],
+    ['12.10', `${year}-10-12`],
+  ])('reads %s', (raw, expected) => expect(parseDate(raw)).toBe(expected));
+
+  it.each(['31.02.2026', '13.13.2026', 'завтра', '', '2026/10'])('rejects %s', (raw) => expect(parseDate(raw)).toBeNull());
+
+  it('knows today and yesterday', () => {
+    expect(parseDate('сьогодні')).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(parseDate('вчора')! < parseDate('сьогодні')!).toBe(true);
+  });
+});
+

@@ -74,7 +74,26 @@ const HELP =
   '/sync 23 — повторно записати витрату 23 у Google Таблицю\n' +
   '/cancel — скасувати поточну дію';
 
-const today = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Kyiv' });
+const kyivDate = (daysAgo = 0) =>
+  new Date(Date.now() - daysAgo * 86_400_000).toLocaleDateString('sv-SE', { timeZone: 'Europe/Kyiv' });
+
+export function parseDate(raw: string): string | null {
+  const s = raw.trim().toLowerCase();
+  if (s === 'today' || s === 'сьогодні') return kyivDate();
+  if (s === 'yesterday' || s === 'вчора') return kyivDate(1);
+  let y: string, m: string, d: string;
+  const iso = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(s);
+  const dmy = /^(\d{1,2})[./-](\d{1,2})(?:[./-](\d{2}|\d{4}))?$/.exec(s);
+  if (iso) [, y, m, d] = iso as unknown as [string, string, string, string];
+  else if (dmy) {
+    [, d, m] = dmy as unknown as [string, string, string];
+    const year = dmy[3] ?? kyivDate().slice(0, 4);
+    y = year.length === 2 ? `20${year}` : year;
+  } else return null;
+  const value = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+  const date = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(value) ? value : null;
+}
 const money = (n: number) => `${n.toLocaleString('uk-UA', { maximumFractionDigits: 2 })} ₴`;
 const short = (e: StoredExpense) => `${e.date.slice(8, 10)}.${e.date.slice(5, 7)} · ${e.item} · ${money(e.total)}`;
 const safe = (s: string) => s.replace(/[\\/:*?"<>|]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -226,7 +245,9 @@ export class ExpenseBotService {
     const skip = (text: string, value = '-') => [[{ text, callback_data: `x:v:${value}` }]];
     switch (draft.step) {
       case 'date':
-        return void (await this.bot.send(chatId, 'Дата (РРРР-ММ-ДД, напр. 2026-10-16):', skip('Сьогодні', 'today')));
+        return void (await this.bot.send(chatId, 'Дата витрати: виберіть або напишіть, напр. 12.10.2026 чи 12.10', [
+          [{ text: 'Сьогодні', callback_data: 'x:v:today' }, { text: 'Вчора', callback_data: 'x:v:yesterday' }],
+        ]));
       case 'item':
         return void (await this.bot.send(chatId, 'На що витрата (видно всім на сайті), напр. «Ремонт машини»:'));
       case 'itemEn':
@@ -330,9 +351,8 @@ export class ExpenseBotService {
   ): { value: unknown } | { next: Step } | { error: string } {
     switch (step) {
       case 'date': {
-        const value = button && raw === 'today' ? today() : raw;
-        const ok = /^\d{4}-\d{2}-\d{2}$/.test(value) && new Date(`${value}T00:00:00Z`).toISOString().startsWith(value);
-        return ok ? { value } : { error: 'Дата має бути у форматі 2026-10-16.' };
+        const value = parseDate(raw);
+        return value ? { value } : { error: 'Не розумію дату. Напишіть, напр., 12.10.2026, 12.10 або 2026-10-12.' };
       }
       case 'item':
         return raw ? { value: raw } : { error: 'Назва не може бути порожньою.' };
