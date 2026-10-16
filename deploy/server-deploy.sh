@@ -6,9 +6,9 @@ compose="docker compose --env-file deploy/prod.env -f docker-compose.yml -f dock
 
 # 1. Back up the DB before migrations; keep the 10 newest.
 stamp=$(date -u +%Y%m%d-%H%M%S)
-if $compose exec -T api node -e "new (require('node:sqlite').DatabaseSync)('/app/data/ubc.sqlite').exec(\"VACUUM INTO '/app/data/backup-$stamp.sqlite'\")" 2>/dev/null; then
-  echo "бекап бази: api/data-prod/backup-$stamp.sqlite"
-  ls -1t api/data-prod/backup-*.sqlite | tail -n +11 | xargs -r rm -f
+if $compose exec -T api node -e "new (require('node:sqlite').DatabaseSync)('/app/data/ubc.sqlite').exec(\"VACUUM INTO '/app/data/backup-deploy-$stamp.sqlite'\")" 2>/dev/null; then
+  echo "бекап бази: api/data-prod/backup-deploy-$stamp.sqlite"
+  ls -1t api/data-prod/backup-deploy-*.sqlite | tail -n +11 | xargs -r rm -f
 else
   echo "бекап пропущено: бекенд ще не запущений"
 fi

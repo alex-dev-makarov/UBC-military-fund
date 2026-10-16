@@ -64,3 +64,23 @@ export interface LedgerImport {
     hasReceipt?: boolean;
   }>;
 }
+
+export interface ExpenseInput {
+  date: string;
+  item: string;
+  itemEn: string | null;
+  category: string | null;
+  person: string | null;
+  note: string | null;
+  price: number;
+  delivery: number;
+  commission: number;
+  hasReceipt: boolean;
+}
+
+export type ExpenseField = keyof ExpenseInput;
+
+export interface StoredExpense extends ExpenseInput {
+  id: number;
+  total: number;
+}

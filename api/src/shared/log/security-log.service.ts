@@ -14,7 +14,10 @@ export type SecurityEvent =
   | 'session.revoked_by_user'
   | 'report.view'
   | 'report.forbidden'
-  | 'rate.limited';
+  | 'rate.limited'
+  | 'expense.add'
+  | 'expense.edit'
+  | 'expense.delete';
 
 @Injectable()
 export class SecurityLogService {

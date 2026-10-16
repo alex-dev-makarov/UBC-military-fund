@@ -3,7 +3,9 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import type { ValidatedEnv } from '../../shared/config/env.types';
 import { UserModule, ChannelMemberGuard, SessionValidGuard } from '../../entities/user';
-import { TelegramService } from '../../shared/telegram';
+import { TelegramService, BotApi } from '../../shared/telegram';
+import { LedgerModule } from '../../entities/report';
+import { ExpenseBotService } from '../expense-bot';
 import { JwtAuthGuard } from '../../shared/auth';
 import { LoginSessionModule } from '../../entities/login-session';
 import { BotUpdatesService } from './model/bot-updates.service';
@@ -27,9 +29,12 @@ import { AuthController } from './api/auth.controller';
 
     UserModule,
     LoginSessionModule,
+    LedgerModule,
   ],
   providers: [
     TelegramService,
+    BotApi,
+    ExpenseBotService,
     AuthService,
     BotUpdatesService,
     ChannelMemberGuard,

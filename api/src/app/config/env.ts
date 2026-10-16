@@ -22,6 +22,10 @@ export function validate(raw: Record<string, string | undefined>): ValidatedEnv 
     JWT_EXPIRES_MS: local ? 2 * 60 * 60_000 : 15 * 60_000,
     TELEGRAM_BOT_TOKEN: raw.TELEGRAM_BOT_TOKEN ?? '',
     TELEGRAM_CHAT_ID: raw.TELEGRAM_CHAT_ID ?? '',
+    ADMIN_TELEGRAM_IDS: (raw.ADMIN_TELEGRAM_IDS ?? '')
+      .split(',')
+      .map((id) => Number(id.trim()))
+      .filter((id) => Number.isInteger(id) && id > 0),
     TELEGRAM_BOT_POLLING: raw.TELEGRAM_BOT_POLLING !== 'false',
     COOKIE_NAME: local ? 'ubc_session' : '__Host-ubc_session',
     COOKIE_SAMESITE: 'lax',
