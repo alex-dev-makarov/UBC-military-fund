@@ -42,6 +42,14 @@ export class BotApi implements OnModuleDestroy {
     return this.call('answerCallbackQuery', { callback_query_id: callbackQueryId }).catch(() => undefined);
   }
 
+  async download(fileId: string): Promise<{ data: Buffer; path: string }> {
+    const { file_path: path } = (await this.call('getFile', { file_id: fileId })) as { file_path: string };
+    const token = this.config.get('TELEGRAM_BOT_TOKEN', { infer: true });
+    const response = await request(`https://api.telegram.org/file/bot${token}/${path}`, { dispatcher: this.dispatcher });
+    if (response.statusCode !== 200) throw new Error(`file download: HTTP ${response.statusCode}`);
+    return { data: Buffer.from(await response.body.arrayBuffer()), path };
+  }
+
   async call(method: string, body: unknown): Promise<unknown> {
     const token = this.config.get('TELEGRAM_BOT_TOKEN', { infer: true });
     const response = await request(`https://api.telegram.org/bot${token}/${method}`, {

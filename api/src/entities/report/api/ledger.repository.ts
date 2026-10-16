@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../../shared/db';
 import type {
+  ExpenseFile,
+  ExpenseFileKind,
   ExpenseField,
   ExpenseInput,
   StoredExpense,
@@ -16,6 +18,7 @@ interface ExpenseRow {
   date: string;
   item: string;
   item_en: string | null;
+  description: string | null;
   category: string | null;
   person: string | null;
   note: string | null;
@@ -62,6 +65,7 @@ export class LedgerRepository {
         date: row.date,
         item,
         itemEn: text(row.itemEn),
+        description: text(row.description),
         category: text(row.category),
         person: text(row.person),
         note: text(row.note),
@@ -105,12 +109,12 @@ export class LedgerRepository {
 
       const insertExpense = db.prepare(
         `INSERT INTO private_expenses
-           (date, item, item_en, category, person, note, price, delivery, commission, has_receipt)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           (date, item, item_en, description, category, person, note, price, delivery, commission, has_receipt)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       );
       for (const e of expenses) {
         insertExpense.run(
-          e.date, e.item, e.itemEn, e.category, e.person, e.note,
+          e.date, e.item, e.itemEn, e.description, e.category, e.person, e.note,
           e.price, e.delivery, e.commission, e.hasReceipt ? 1 : 0,
         );
       }
@@ -157,6 +161,7 @@ export class LedgerRepository {
         date: r.date,
         item: r.item,
         itemEn: r.item_en,
+        description: r.description,
         category: r.category,
         person: r.person,
         note: r.note,
@@ -172,6 +177,7 @@ export class LedgerRepository {
     date: 'date',
     item: 'item',
     itemEn: 'item_en',
+    description: 'description',
     category: 'category',
     person: 'person',
     note: 'note',
@@ -187,6 +193,7 @@ export class LedgerRepository {
       date: row.date,
       item: row.item,
       itemEn: row.item_en,
+      description: row.description,
       category: row.category,
       person: row.person,
       note: row.note,
@@ -216,10 +223,13 @@ export class LedgerRepository {
     const { lastInsertRowid } = this.database.connection
       .prepare(
         `INSERT INTO private_expenses
-           (date, item, item_en, category, person, note, price, delivery, commission, has_receipt)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           (date, item, item_en, description, category, person, note, price, delivery, commission, has_receipt)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
-      .run(e.date, e.item, e.itemEn, e.category, e.person, e.note, e.price, e.delivery, e.commission, e.hasReceipt ? 1 : 0);
+      .run(
+        e.date, e.item, e.itemEn, e.description, e.category, e.person, e.note,
+        e.price, e.delivery, e.commission, e.hasReceipt ? 1 : 0,
+      );
     this.touch();
     return Number(lastInsertRowid);
   }
@@ -237,6 +247,19 @@ export class LedgerRepository {
     const { changes } = this.database.connection.prepare('DELETE FROM private_expenses WHERE id = ?').run(id);
     if (changes > 0) this.touch();
     return changes > 0;
+  }
+
+  addFile(expenseId: number, kind: ExpenseFileKind, name: string, url: string): void {
+    this.database.connection
+      .prepare('INSERT INTO private_expense_files (expense_id, kind, name, url, created_at) VALUES (?, ?, ?, ?, ?)')
+      .run(expenseId, kind, name, url, Date.now());
+    if (kind === 'receipt') this.update(expenseId, 'hasReceipt', true);
+  }
+
+  files(expenseId: number): ExpenseFile[] {
+    return this.database.connection
+      .prepare('SELECT kind, name, url FROM private_expense_files WHERE expense_id = ? ORDER BY id')
+      .all(expenseId) as unknown as ExpenseFile[];
   }
 
   people(): string[] {

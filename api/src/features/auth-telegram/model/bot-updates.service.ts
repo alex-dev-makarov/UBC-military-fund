@@ -20,6 +20,9 @@ interface TelegramUpdate {
   update_id: number;
   message?: {
     text?: string;
+    caption?: string;
+    photo?: Array<{ file_id: string; file_size?: number }>;
+    document?: { file_id: string; file_name?: string; mime_type?: string };
     chat?: { id: number; type?: string };
     from?: TelegramUser;
   };
@@ -95,7 +98,18 @@ export class BotUpdatesService implements OnModuleInit, OnModuleDestroy {
     const from = message?.from;
     const chatId = message?.chat?.id;
     const text = message?.text?.trim();
-    if (!from || !chatId || !text || message.chat?.type !== 'private') return;
+    if (!from || !chatId || message?.chat?.type !== 'private') return;
+    const photo = message.photo?.at(-1);
+    const file = message.document
+      ? { fileId: message.document.file_id, name: message.document.file_name, mime: message.document.mime_type }
+      : photo
+        ? { fileId: photo.file_id, mime: 'image/jpeg' }
+        : null;
+    if (file) {
+      await this.expenses.handleFile(from.id, chatId, file);
+      return;
+    }
+    if (!text) return;
     if (await this.expenses.handleMessage(from.id, chatId, text)) return;
 
     const match = /^\/start(?:@\w+)?\s+(\S+)$/.exec(text);

@@ -1,0 +1,154 @@
+import { beforeEach, describe, expect, it } from 'vitest';
+import { DatabaseService } from '../../shared/db';
+import { FundRepository } from '../../entities/fund';
+import { LedgerRepository } from '../../entities/report';
+import { ExpenseBotService } from './expense-bot.service';
+
+const ADMIN = 111;
+const STRANGER = 222;
+const CHAT = 1;
+
+type Sent = { text: string; keyboard?: Array<Array<{ text: string; callback_data?: string }>> };
+
+function setup(googleEnabled = true) {
+  const db = new DatabaseService({ get: () => ':memory:' } as never);
+  db.onModuleInit();
+  new FundRepository(db).seedIfEmpty();
+  const ledger = new LedgerRepository(db);
+  const sent: Sent[] = [];
+  const rows = new Map<number, unknown[]>();
+  const uploads: string[] = [];
+  const bot = {
+    send: async (_chat: number, text: string, keyboard?: Sent['keyboard']) => void sent.push({ text, keyboard }),
+    edit: async (_m: unknown, text: string, keyboard?: Sent['keyboard']) => void sent.push({ text, keyboard }),
+    answer: async () => undefined,
+    download: async () => ({ data: Buffer.from('x'), path: 'photos/a.jpg' }),
+  };
+  const google = {
+    enabled: googleEnabled,
+    upload: async (_k: string, _y: string, name: string) => {
+      uploads.push(name);
+      return `https://drive/${uploads.length}`;
+    },
+    ensureHeader: async () => undefined,
+    syncRow: async (id: number, values: unknown[]) => void rows.set(id, values),
+    deleteRow: async (id: number) => void rows.delete(id),
+  };
+  const config = { get: (key: string) => (key === 'ADMIN_TELEGRAM_IDS' ? [ADMIN] : undefined) };
+  const log = { record: () => undefined };
+  const service = new ExpenseBotService(bot as never, ledger, db, google as never, log as never, config as never);
+  const message = { message_id: 1, chat: { id: CHAT } };
+  const say = (text: string, from = ADMIN) => service.handleMessage(from, CHAT, text);
+  const press = (data: string, from = ADMIN) => service.handleCallback({ id: 'q', from: { id: from }, data, message });
+  const last = () => sent[sent.length - 1]!;
+  const button = (label: string) =>
+    last().keyboard!.flat().find((b) => b.text === label)!.callback_data!;
+  return { service, ledger, sent, rows, uploads, say, press, last, button };
+}
+
+describe('ExpenseBotService', () => {
+  let t: ReturnType<typeof setup>;
+  beforeEach(() => {
+    t = setup();
+  });
+
+  it('ignores non-admins but tells anyone their id', async () => {
+    expect(await t.say('/add', STRANGER)).toBe(false);
+    expect(await t.say('/id', STRANGER)).toBe(true);
+    expect(t.last().text).toBe(`Ваш Telegram ID: ${STRANGER}`);
+  });
+
+  it('adds an expense step by step, with receipts, and writes the sheet row', async () => {
+    await t.say('/add');
+    await t.say('2026-10-12');
+    await t.say('Ремонт машини');
+    await t.press('x:v:-');
+    await t.say('заміна зчеплення');
+    await t.press(t.button('Авто'));
+    await t.press('x:v:new');
+    await t.say('Лера');
+    await t.say('21 080');
+    await t.press('x:v:0');
+    await t.say('15,5');
+    await t.press('x:v:-');
+    await t.service.handleFile(ADMIN, CHAT, { fileId: 'f1' });
+    await t.service.handleFile(ADMIN, CHAT, { fileId: 'f2', name: 'invoice.pdf', mime: 'application/pdf' });
+    await t.press('x:v:done');
+    await t.press('x:v:done');
+    expect(t.last().text).toContain('Чеків: 2, фото звіт: 0');
+    await t.press('x:ok');
+
+    const [e] = t.ledger.recent(1);
+    expect(e).toMatchObject({
+      date: '2026-10-12', item: 'Ремонт машини', itemEn: null, description: 'заміна зчеплення',
+      category: 'Авто', person: 'Лера', price: 21080, delivery: 0, commission: 15.5, hasReceipt: true, total: 21095.5,
+    });
+    expect(t.uploads).toEqual([
+      '2026-10-12 Лера Ремонт машини (чек 1).jpg',
+      '2026-10-12 Лера Ремонт машини (чек 2).pdf',
+    ]);
+    expect(t.rows.get(e!.id)).toEqual([
+      'Ремонт машини', '2026-10-12', 21080, 0, 15.5, 'так', 21095.5,
+      'Лера', 'Авто', 'заміна зчеплення', '', 'https://drive/1\nhttps://drive/2', '', e!.id,
+    ]);
+  });
+
+  it('rejects bad input and asks again', async () => {
+    await t.say('/add');
+    await t.say('12.10.2026');
+    expect(t.sent.at(-2)!.text).toContain('2026-10-16');
+    await t.say('2026-02-31');
+    expect(t.sent.at(-2)!.text).toContain('⚠️');
+  });
+
+  it('caps receipts at 3', async () => {
+    await t.say('/add');
+    for (const step of ['2026-10-12', 'X']) await t.say(step);
+    await t.press('x:v:-');
+    await t.press('x:v:-');
+    await t.press(t.button('Інше'));
+    await t.press('x:v:none');
+    await t.say('100');
+    await t.press('x:v:0');
+    await t.press('x:v:0');
+    await t.press('x:v:-');
+    for (const id of ['a', 'b', 'c']) await t.service.handleFile(ADMIN, CHAT, { fileId: id });
+    expect(t.last().text).toContain('фото-звіт');
+  });
+
+  it('edits one field and resyncs the row', async () => {
+    const id = t.ledger.add({
+      date: '2026-10-12', item: 'Гума', itemEn: null, description: null, category: 'Авто', person: 'Лера',
+      note: null, price: 100, delivery: 0, commission: 0, hasReceipt: false,
+    });
+    await t.say('/edit');
+    await t.press(`x:e:${id}`);
+    await t.press(`x:f:item.${id}`);
+    await t.say('Шини на ЕВАК');
+    expect(t.ledger.get(id)!.item).toBe('Шини на ЕВАК');
+    expect(t.rows.get(id)![0]).toBe('Шини на ЕВАК');
+  });
+
+  it('deletes after confirmation and removes the sheet row', async () => {
+    const id = t.ledger.add({
+      date: '2026-10-12', item: 'X', itemEn: null, description: null, category: 'Інше', person: null,
+      note: null, price: 1, delivery: 0, commission: 0, hasReceipt: false,
+    });
+    t.rows.set(id, []);
+    await t.say('/delete');
+    await t.press(`x:d:${id}`);
+    expect(t.ledger.get(id)).toBeDefined();
+    await t.press(`x:dd:${id}`);
+    expect(t.ledger.get(id)).toBeUndefined();
+    expect(t.rows.has(id)).toBe(false);
+  });
+
+  it('refuses callbacks from non-admins', async () => {
+    const id = t.ledger.add({
+      date: '2026-10-12', item: 'X', itemEn: null, description: null, category: 'Інше', person: null,
+      note: null, price: 1, delivery: 0, commission: 0, hasReceipt: false,
+    });
+    await t.press(`x:dd:${id}`, STRANGER);
+    expect(t.ledger.get(id)).toBeDefined();
+  });
+});

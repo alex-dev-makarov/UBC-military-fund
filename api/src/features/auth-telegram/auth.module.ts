@@ -6,6 +6,7 @@ import { UserModule, ChannelMemberGuard, SessionValidGuard } from '../../entitie
 import { TelegramService, BotApi } from '../../shared/telegram';
 import { LedgerModule } from '../../entities/report';
 import { ExpenseBotService } from '../expense-bot';
+import { GoogleService } from '../../shared/google';
 import { JwtAuthGuard } from '../../shared/auth';
 import { LoginSessionModule } from '../../entities/login-session';
 import { BotUpdatesService } from './model/bot-updates.service';
@@ -34,6 +35,7 @@ import { AuthController } from './api/auth.controller';
   providers: [
     TelegramService,
     BotApi,
+    GoogleService,
     ExpenseBotService,
     AuthService,
     BotUpdatesService,

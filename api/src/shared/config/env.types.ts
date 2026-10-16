@@ -11,6 +11,15 @@ export interface ValidatedEnv {
   TELEGRAM_BOT_TOKEN: string;
   TELEGRAM_CHAT_ID: string;
   ADMIN_TELEGRAM_IDS: number[];
+  GOOGLE: {
+    clientId: string;
+    clientSecret: string;
+    refreshToken: string;
+    sheetId: string;
+    sheetGid: number;
+    receiptsFolderId: string;
+    photosFolderId: string;
+  } | null;
   COOKIE_NAME: string;
   COOKIE_SAMESITE: 'lax' | 'strict' | 'none';
   COOKIE_SECURE: boolean;

@@ -55,6 +55,7 @@ export interface LedgerImport {
     date: string;
     item: string;
     itemEn?: string | null;
+    description?: string | null;
     category?: string | null;
     person?: string | null;
     note?: string | null;
@@ -69,6 +70,7 @@ export interface ExpenseInput {
   date: string;
   item: string;
   itemEn: string | null;
+  description: string | null;
   category: string | null;
   person: string | null;
   note: string | null;
@@ -83,4 +85,12 @@ export type ExpenseField = keyof ExpenseInput;
 export interface StoredExpense extends ExpenseInput {
   id: number;
   total: number;
+}
+
+export type ExpenseFileKind = 'receipt' | 'photo';
+
+export interface ExpenseFile {
+  kind: ExpenseFileKind;
+  name: string;
+  url: string;
 }

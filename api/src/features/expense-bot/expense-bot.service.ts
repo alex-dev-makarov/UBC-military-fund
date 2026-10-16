@@ -1,10 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { ValidatedEnv } from '../../shared/config/env.types';
 import { BotApi, type BotMessageRef, type Keyboard } from '../../shared/telegram';
 import { DatabaseService } from '../../shared/db';
+import { GoogleService } from '../../shared/google';
 import { SecurityLogService } from '../../shared/log';
-import { LedgerRepository, type ExpenseField, type ExpenseInput, type StoredExpense } from '../../entities/report';
+import {
+  LedgerRepository,
+  type ExpenseField,
+  type ExpenseFileKind,
+  type ExpenseInput,
+  type StoredExpense,
+} from '../../entities/report';
 
 export interface BotCallback {
   id: string;
@@ -13,30 +20,49 @@ export interface BotCallback {
   message?: BotMessageRef;
 }
 
-type Step = ExpenseField | 'newPerson' | 'confirm';
+export interface BotFile {
+  fileId: string;
+  name?: string;
+  mime?: string;
+}
+
+type FileStep = 'receipts' | 'photos';
+type Step = ExpenseField | FileStep | 'newPerson' | 'confirm';
+
+interface PendingFile extends BotFile {
+  kind: ExpenseFileKind;
+}
 
 interface Draft {
   mode: 'add' | 'edit';
   step: Step;
   data: Partial<ExpenseInput>;
+  files: PendingFile[];
   id?: number;
 }
 
-const ADD_STEPS: ExpenseField[] = [
-  'date', 'item', 'itemEn', 'category', 'person', 'price', 'delivery', 'commission', 'hasReceipt', 'note',
+const MAX_FILES: Record<FileStep, number> = { receipts: 3, photos: 10 };
+const FILE_KIND: Record<FileStep, ExpenseFileKind> = { receipts: 'receipt', photos: 'photo' };
+
+const ADD_STEPS: Step[] = [
+  'date', 'item', 'itemEn', 'description', 'category', 'person',
+  'price', 'delivery', 'commission', 'note', 'receipts', 'photos',
 ];
 
-const LABEL: Record<ExpenseField, string> = {
+const LABEL: Record<ExpenseField | FileStep, string> = {
   date: 'Дата',
   item: 'Назва',
   itemEn: 'Назва англійською',
+  description: 'Опис',
   category: 'Категорія',
-  person: 'Людина',
+  person: 'Кому',
   price: 'Ціна',
   delivery: 'Доставка',
   commission: 'Комісія',
-  hasReceipt: 'Чек',
+  hasReceipt: 'Чек є/немає',
   note: 'Примітка',
+  receipts: '+ Чеки',
+  photos: '+ Фото звіт',
 };
 
 const HELP =
@@ -45,20 +71,25 @@ const HELP =
   '/edit — змінити витрату\n' +
   '/delete — видалити витрату\n' +
   '/last — 10 останніх витрат\n' +
+  '/sync 23 — повторно записати витрату 23 у Google Таблицю\n' +
   '/cancel — скасувати поточну дію';
 
 const today = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Kyiv' });
 const money = (n: number) => `${n.toLocaleString('uk-UA', { maximumFractionDigits: 2 })} ₴`;
 const short = (e: StoredExpense) => `${e.date.slice(8, 10)}.${e.date.slice(5, 7)} · ${e.item} · ${money(e.total)}`;
+const safe = (s: string) => s.replace(/[\\/:*?"<>|]/g, ' ').replace(/\s+/g, ' ').trim();
+const EXT: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'application/pdf': 'pdf' };
 
 @Injectable()
 export class ExpenseBotService {
+  private readonly logger = new Logger(ExpenseBotService.name);
   private readonly drafts = new Map<number, Draft>();
 
   constructor(
     private readonly bot: BotApi,
     private readonly ledger: LedgerRepository,
     private readonly database: DatabaseService,
+    private readonly google: GoogleService,
     private readonly securityLog: SecurityLogService,
     private readonly config: ConfigService<ValidatedEnv, true>,
   ) {}
@@ -74,12 +105,12 @@ export class ExpenseBotService {
     }
     if (!this.isAdmin(telegramId)) return false;
 
-    const command = /^\/(\w+)/.exec(text)?.[1];
+    const [, command, arg] = /^\/(\w+)(?:@\w+)?\s*(.*)$/.exec(text) ?? [];
     if (command && command !== 'start') {
       this.drafts.delete(telegramId);
       switch (command) {
         case 'add':
-          this.drafts.set(telegramId, { mode: 'add', step: 'date', data: {} });
+          this.drafts.set(telegramId, { mode: 'add', step: 'date', data: {}, files: [] });
           await this.ask(chatId, telegramId);
           return true;
         case 'edit':
@@ -91,6 +122,9 @@ export class ExpenseBotService {
         case 'last':
           await this.showLast(chatId);
           return true;
+        case 'sync':
+          await this.resync(chatId, Number(arg));
+          return true;
         case 'cancel':
           await this.bot.send(chatId, 'Скасовано.');
           return true;
@@ -101,8 +135,36 @@ export class ExpenseBotService {
     }
 
     const draft = this.drafts.get(telegramId);
-    if (!draft || draft.step === 'confirm') return false;
+    if (!draft || draft.step === 'confirm' || draft.step === 'receipts' || draft.step === 'photos') return false;
     await this.accept(chatId, telegramId, draft, text);
+    return true;
+  }
+
+  async handleFile(telegramId: number, chatId: number, file: BotFile): Promise<boolean> {
+    if (!this.isAdmin(telegramId)) return false;
+    const draft = this.drafts.get(telegramId);
+    if (!draft || (draft.step !== 'receipts' && draft.step !== 'photos')) {
+      await this.bot.send(chatId, 'Файл зараз не очікується. Почніть з /add або /edit.');
+      return true;
+    }
+    const step = draft.step;
+    const kind = FILE_KIND[step];
+    const already = this.existingCount(draft, kind);
+    const max = MAX_FILES[step];
+    if (already >= max) {
+      await this.bot.send(chatId, `Уже ${max} — більше не можна.`);
+      return true;
+    }
+    draft.files.push({ ...file, kind });
+    const count = already + 1;
+    if (count >= max) {
+      await this.bot.send(chatId, `Отримано ${count} з ${max}.`);
+      await this.finishFiles(chatId, telegramId, draft);
+    } else {
+      await this.bot.send(chatId, `Отримано ${count} з ${max}. Надішліть ще або натисніть «Готово».`, [
+        [{ text: 'Готово', callback_data: 'x:v:done' }],
+      ]);
+    }
     return true;
   }
 
@@ -119,7 +181,12 @@ export class ExpenseBotService {
 
     switch (action) {
       case 'v':
-        if (draft && draft.step !== 'confirm') await this.accept(chatId, telegramId, draft, arg, true);
+        if (!draft || draft.step === 'confirm') return true;
+        if (draft.step === 'receipts' || draft.step === 'photos') {
+          await this.finishFiles(chatId, telegramId, draft);
+        } else {
+          await this.accept(chatId, telegramId, draft, arg, true);
+        }
         return true;
       case 'ok':
         if (draft?.step === 'confirm') await this.save(chatId, telegramId, draft);
@@ -132,9 +199,9 @@ export class ExpenseBotService {
         await this.chooseField(query.message, Number(arg));
         return true;
       case 'f': {
-        const [field, id] = arg.split('.') as [ExpenseField, string];
+        const [field, id] = arg.split('.') as [ExpenseField | FileStep, string];
         if (!(field in LABEL)) return true;
-        this.drafts.set(telegramId, { mode: 'edit', step: field, data: {}, id: Number(id) });
+        this.drafts.set(telegramId, { mode: 'edit', step: field, data: {}, files: [], id: Number(id) });
         await this.ask(chatId, telegramId);
         return true;
       }
@@ -149,6 +216,11 @@ export class ExpenseBotService {
     }
   }
 
+  private existingCount(draft: Draft, kind: ExpenseFileKind): number {
+    const saved = draft.id ? this.ledger.files(draft.id).filter((f) => f.kind === kind).length : 0;
+    return saved + draft.files.filter((f) => f.kind === kind).length;
+  }
+
   private async ask(chatId: number, telegramId: number): Promise<void> {
     const draft = this.drafts.get(telegramId)!;
     const skip = (text: string, value = '-') => [[{ text, callback_data: `x:v:${value}` }]];
@@ -156,9 +228,11 @@ export class ExpenseBotService {
       case 'date':
         return void (await this.bot.send(chatId, 'Дата (РРРР-ММ-ДД, напр. 2026-10-16):', skip('Сьогодні', 'today')));
       case 'item':
-        return void (await this.bot.send(chatId, 'Назва українською (її видно всім на сайті):'));
+        return void (await this.bot.send(chatId, 'На що витрата (видно всім на сайті), напр. «Ремонт машини»:'));
       case 'itemEn':
         return void (await this.bot.send(chatId, 'Назва англійською:', skip('Пропустити')));
+      case 'description':
+        return void (await this.bot.send(chatId, 'Опис: що саме, напр. «заміна зчеплення» (не видно на сайті):', skip('Пропустити')));
       case 'category':
         return void (await this.bot.send(
           chatId,
@@ -173,7 +247,7 @@ export class ExpenseBotService {
         }
         rows.push([{ text: '➕ Нова людина', callback_data: 'x:v:new' }]);
         rows.push([{ text: 'Загальна витрата', callback_data: 'x:v:none' }]);
-        return void (await this.bot.send(chatId, 'Хто отримав:', rows));
+        return void (await this.bot.send(chatId, 'Кому була допомога:', rows));
       }
       case 'newPerson':
         return void (await this.bot.send(chatId, 'Ім\'я (так, як писатимете й надалі):'));
@@ -188,9 +262,21 @@ export class ExpenseBotService {
           [{ text: 'Є', callback_data: 'x:v:1' }, { text: 'Немає', callback_data: 'x:v:0' }],
         ]));
       case 'note':
-        return void (await this.bot.send(chatId, 'Примітка (лише для закритого звіту):', skip('Без примітки')));
+        return void (await this.bot.send(chatId, 'Примітка (лише в закритому звіті), напр. «позика»:', skip('Без примітки')));
+      case 'receipts':
+        return void (await this.bot.send(
+          chatId,
+          'Надішліть чеки: оплата, доставка, інвойс — фото або PDF, до 3.',
+          skip(draft.mode === 'add' ? 'Пропустити' : 'Готово', 'done'),
+        ));
+      case 'photos':
+        return void (await this.bot.send(
+          chatId,
+          'Надішліть фото-звіт покупки, до 10 фото.',
+          skip(draft.mode === 'add' ? 'Пропустити' : 'Готово', 'done'),
+        ));
       case 'confirm':
-        return void (await this.bot.send(chatId, this.summary(draft.data as ExpenseInput), [
+        return void (await this.bot.send(chatId, this.summary(draft), [
           [{ text: '✅ Записати', callback_data: 'x:ok' }, { text: 'Скасувати', callback_data: 'x:no' }],
         ]));
     }
@@ -202,7 +288,7 @@ export class ExpenseBotService {
       await this.bot.send(chatId, `⚠️ ${parsed.error}`);
       return this.ask(chatId, telegramId);
     }
-    if (parsed.next) {
+    if ('next' in parsed) {
       draft.step = parsed.next;
       return this.ask(chatId, telegramId);
     }
@@ -211,17 +297,36 @@ export class ExpenseBotService {
     (draft.data as Record<string, unknown>)[field] = parsed.value;
 
     if (draft.mode === 'edit') return this.saveEdit(chatId, telegramId, draft, field);
+    return this.advance(chatId, telegramId, draft, field);
+  }
 
-    const next = ADD_STEPS[ADD_STEPS.indexOf(field) + 1];
-    draft.step = next ?? 'confirm';
+  private async advance(chatId: number, telegramId: number, draft: Draft, current: Step): Promise<void> {
+    draft.step = ADD_STEPS[ADD_STEPS.indexOf(current) + 1] ?? 'confirm';
     return this.ask(chatId, telegramId);
+  }
+
+  private async finishFiles(chatId: number, telegramId: number, draft: Draft): Promise<void> {
+    const step = draft.step as FileStep;
+    if (draft.mode === 'add') return this.advance(chatId, telegramId, draft, step);
+    this.drafts.delete(telegramId);
+    const e = this.ledger.get(draft.id!);
+    if (!e) return void (await this.bot.send(chatId, 'Цієї витрати вже немає.'));
+    if (draft.files.length === 0) return void (await this.bot.send(chatId, 'Нічого не додано.'));
+    try {
+      await this.uploadFiles(e.id, e, draft.files);
+    } catch (error) {
+      return void (await this.bot.send(chatId, `⚠️ Не вдалося завантажити файли: ${this.reason(error)}. Спробуйте ще раз.`));
+    }
+    this.securityLog.record('expense.edit', { admin: telegramId, id: e.id, field: step, added: draft.files.length });
+    await this.bot.send(chatId, `✅ Додано файлів: ${draft.files.length}.\n${short(e)}`);
+    await this.pushRow(chatId, e.id);
   }
 
   private parse(
     step: ExpenseField | 'newPerson',
     raw: string,
     button: boolean,
-  ): { value: unknown; next?: undefined } | { next: Step } | { error: string } {
+  ): { value: unknown } | { next: Step } | { error: string } {
     switch (step) {
       case 'date': {
         const value = button && raw === 'today' ? today() : raw;
@@ -231,13 +336,12 @@ export class ExpenseBotService {
       case 'item':
         return raw ? { value: raw } : { error: 'Назва не може бути порожньою.' };
       case 'itemEn':
+      case 'description':
       case 'note':
         return { value: button && raw === '-' ? null : raw || null };
       case 'category': {
         const name = button ? this.ledger.categories()[Number(raw)] : raw;
-        return name && this.ledger.categories().includes(name)
-          ? { value: name }
-          : { error: 'Виберіть категорію кнопкою.' };
+        return name && this.ledger.categories().includes(name) ? { value: name } : { error: 'Виберіть категорію кнопкою.' };
       }
       case 'person': {
         if (!button) return { value: raw || null };
@@ -264,32 +368,95 @@ export class ExpenseBotService {
     }
   }
 
-  private summary(e: ExpenseInput): string {
+  private summary(draft: Draft): string {
+    const e = draft.data as ExpenseInput;
     const total = e.price + e.delivery + e.commission;
+    const count = (kind: ExpenseFileKind) => draft.files.filter((f) => f.kind === kind).length;
     return [
       'Перевірте:',
       `Дата: ${e.date}`,
-      `Назва: ${e.item}${e.itemEn ? ` / ${e.itemEn}` : ''}`,
+      `Витрата: ${e.item}${e.itemEn ? ` / ${e.itemEn}` : ''}`,
+      `Опис: ${e.description ?? '—'}`,
       `Категорія: ${e.category}`,
-      `Людина: ${e.person ?? '— (загальна)'}`,
+      `Кому: ${e.person ?? '— (загальна)'}`,
       `Сума: ${money(total)} (ціна ${e.price} + доставка ${e.delivery} + комісія ${e.commission})`,
-      `Чек: ${e.hasReceipt ? 'є' : 'немає'}`,
       `Примітка: ${e.note ?? '—'}`,
+      `Чеків: ${count('receipt')}, фото звіт: ${count('photo')}`,
     ].join('\n');
   }
 
   private async save(chatId: number, telegramId: number, draft: Draft): Promise<void> {
+    const data = { ...(draft.data as ExpenseInput), hasReceipt: draft.files.some((f) => f.kind === 'receipt') };
+    if (draft.files.length > 0) await this.bot.send(chatId, 'Завантажую файли…');
+
+    let uploaded: Array<{ kind: ExpenseFileKind; name: string; url: string }> = [];
+    try {
+      uploaded = await this.prepareUploads(data, draft.files);
+    } catch (error) {
+      return void (await this.bot.send(chatId, `⚠️ Не вдалося завантажити файли: ${this.reason(error)}. Натисніть «Записати» ще раз.`, [
+        [{ text: '✅ Записати', callback_data: 'x:ok' }, { text: 'Скасувати', callback_data: 'x:no' }],
+      ]));
+    }
+
     this.drafts.delete(telegramId);
-    const data = draft.data as ExpenseInput;
     this.database.backup('bot');
     const id = this.ledger.add(data);
-    this.securityLog.record('expense.add', {
-      admin: telegramId,
-      id,
-      item: data.item,
-      total: data.price + data.delivery + data.commission,
-    });
+    for (const f of uploaded) this.ledger.addFile(id, f.kind, f.name, f.url);
+    this.securityLog.record('expense.add', { admin: telegramId, id, item: data.item, total: data.price + data.delivery + data.commission });
     await this.bot.send(chatId, `✅ Записано (id ${id}). На сайті вже видно.`);
+    await this.pushRow(chatId, id);
+  }
+
+  private async uploadFiles(id: number, e: ExpenseInput, files: PendingFile[]): Promise<void> {
+    const offset = { receipt: 0, photo: 0 };
+    for (const f of this.ledger.files(id)) offset[f.kind] += 1;
+    for (const f of await this.prepareUploads(e, files, offset)) this.ledger.addFile(id, f.kind, f.name, f.url);
+  }
+
+  private async prepareUploads(
+    e: ExpenseInput,
+    files: PendingFile[],
+    offset: Record<ExpenseFileKind, number> = { receipt: 0, photo: 0 },
+  ): Promise<Array<{ kind: ExpenseFileKind; name: string; url: string }>> {
+    if (files.length === 0) return [];
+    if (!this.google.enabled) throw new Error('Google не налаштовано на сервері');
+    const result: Array<{ kind: ExpenseFileKind; name: string; url: string }> = [];
+    const counter = { ...offset };
+    for (const f of files) {
+      counter[f.kind] += 1;
+      const { data, path } = await this.bot.download(f.fileId);
+      const mime = f.mime ?? (path.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
+      const ext = f.name?.split('.').pop() ?? EXT[mime] ?? path.split('.').pop() ?? 'bin';
+      const label = f.kind === 'receipt' ? 'чек' : 'фото';
+      const name = safe(`${e.date} ${e.person ?? 'загальна'} ${e.item} (${label} ${counter[f.kind]})`) + `.${ext}`;
+      const url = await this.google.upload(f.kind, e.date.slice(0, 4), name, mime, data);
+      result.push({ kind: f.kind, name, url });
+    }
+    return result;
+  }
+
+  private async pushRow(chatId: number, id: number): Promise<void> {
+    if (!this.google.enabled) return;
+    const e = this.ledger.get(id);
+    if (!e) return;
+    try {
+      const files = this.ledger.files(id);
+      const urls = (kind: ExpenseFileKind) => files.filter((f) => f.kind === kind).map((f) => f.url).join('\n');
+      await this.google.ensureHeader();
+      await this.google.syncRow(id, [
+        e.item, e.date, e.price, e.delivery, e.commission, e.hasReceipt ? 'так' : 'ні', e.total,
+        e.person ?? '', e.category ?? '', e.description ?? '', e.note ?? '', urls('receipt'), urls('photo'), id,
+      ]);
+    } catch (error) {
+      this.logger.warn(`sheet sync ${id} failed: ${this.reason(error)}`);
+      await this.bot.send(chatId, `⚠️ У базі збережено, але Google Таблицю не оновлено: ${this.reason(error)}.\nПовторити: /sync ${id}`);
+    }
+  }
+
+  private async resync(chatId: number, id: number): Promise<void> {
+    if (!Number.isInteger(id) || !this.ledger.get(id)) return void (await this.bot.send(chatId, 'Вкажіть номер: /sync 23'));
+    await this.pushRow(chatId, id);
+    await this.bot.send(chatId, `Готово: ${short(this.ledger.get(id)!)}`);
   }
 
   private async saveEdit(chatId: number, telegramId: number, draft: Draft, field: ExpenseField): Promise<void> {
@@ -301,6 +468,7 @@ export class ExpenseBotService {
     this.ledger.update(draft.id!, field, value);
     this.securityLog.record('expense.edit', { admin: telegramId, id: draft.id, field, from: before[field], to: value });
     await this.bot.send(chatId, `✅ ${LABEL[field]}: ${this.show(before[field])} → ${this.show(value)}\n${short(this.ledger.get(draft.id!)!)}`);
+    await this.pushRow(chatId, draft.id!);
   }
 
   private show(value: unknown): string {
@@ -309,20 +477,20 @@ export class ExpenseBotService {
     return String(value);
   }
 
+  private reason(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
+  }
+
   private async pickExpense(chatId: number, action: 'e' | 'd', title: string): Promise<void> {
     const recent = this.ledger.recent(10);
     if (recent.length === 0) return void (await this.bot.send(chatId, 'Витрат ще немає.'));
-    await this.bot.send(
-      chatId,
-      title,
-      recent.map((e) => [{ text: short(e), callback_data: `x:${action}:${e.id}` }]),
-    );
+    await this.bot.send(chatId, title, recent.map((e) => [{ text: short(e), callback_data: `x:${action}:${e.id}` }]));
   }
 
   private async chooseField(message: BotMessageRef, id: number): Promise<void> {
     const e = this.ledger.get(id);
     if (!e) return void (await this.bot.edit(message, 'Цієї витрати вже немає.'));
-    const fields = Object.keys(LABEL) as ExpenseField[];
+    const fields = Object.keys(LABEL) as Array<ExpenseField | FileStep>;
     const rows: Keyboard = [];
     for (let i = 0; i < fields.length; i += 2) {
       rows.push(fields.slice(i, i + 2).map((f) => ({ text: LABEL[f], callback_data: `x:f:${f}.${id}` })));
@@ -333,7 +501,7 @@ export class ExpenseBotService {
   private async confirmDelete(message: BotMessageRef, id: number): Promise<void> {
     const e = this.ledger.get(id);
     if (!e) return void (await this.bot.edit(message, 'Цієї витрати вже немає.'));
-    await this.bot.edit(message, `Видалити?\n${short(e)}${e.person ? ` · ${e.person}` : ''}`, [
+    await this.bot.edit(message, `Видалити?\n${short(e)}${e.person ? ` · ${e.person}` : ''}\nФайли чеків на Диску залишаться.`, [
       [{ text: '🗑 Видалити', callback_data: `x:dd:${id}` }, { text: 'Скасувати', callback_data: 'x:no' }],
     ]);
   }
@@ -345,13 +513,19 @@ export class ExpenseBotService {
     this.ledger.remove(id);
     this.securityLog.record('expense.delete', { admin: telegramId, id, item: e.item, total: e.total });
     await this.bot.edit(message, `🗑 Видалено: ${short(e)}`);
+    if (!this.google.enabled) return;
+    await this.google.deleteRow(id).catch(async (error) => {
+      await this.bot.send(message.chat.id, `⚠️ Рядок у Google Таблиці не видалено: ${this.reason(error)}. Видаліть рядок з ID ${id} вручну.`);
+    });
   }
 
   private async showLast(chatId: number): Promise<void> {
     const recent = this.ledger.recent(10);
     await this.bot.send(
       chatId,
-      recent.length ? recent.map((e) => `${short(e)}${e.person ? ` · ${e.person}` : ''}`).join('\n') : 'Витрат ще немає.',
+      recent.length
+        ? recent.map((e) => `${e.id}. ${short(e)}${e.person ? ` · ${e.person}` : ''}`).join('\n')
+        : 'Витрат ще немає.',
     );
   }
 }

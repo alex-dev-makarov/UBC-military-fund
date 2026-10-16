@@ -1,1 +1,1 @@
-export { ExpenseBotService, type BotCallback } from './expense-bot.service';
+export { ExpenseBotService, type BotCallback, type BotFile } from './expense-bot.service';
