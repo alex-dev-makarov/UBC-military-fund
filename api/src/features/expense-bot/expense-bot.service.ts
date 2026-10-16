@@ -267,7 +267,7 @@ export class ExpenseBotService {
           rows.push(people.slice(i, i + 2).map((name, j) => ({ text: name, callback_data: `x:v:p${i + j}` })));
         }
         rows.push([{ text: '➕ Нова людина', callback_data: 'x:v:new' }]);
-        rows.push([{ text: 'Загальна витрата', callback_data: 'x:v:none' }]);
+        rows.push([{ text: 'Без людини', callback_data: 'x:v:none' }]);
         return void (await this.bot.send(chatId, 'Кому була допомога:', rows));
       }
       case 'newPerson':
@@ -399,7 +399,7 @@ export class ExpenseBotService {
       `Витрата: ${e.item}${e.itemEn ? ` / ${e.itemEn}` : ''}`,
       `Опис: ${e.description ?? '—'}`,
       `Категорія: ${e.category}`,
-      `Кому: ${e.person ?? '— (загальна)'}`,
+      `Кому: ${e.person ?? '— (без людини)'}`,
       `Сума: ${money(total)} (ціна ${e.price} + доставка ${e.delivery} + комісія ${e.commission})`,
       `Примітка: ${e.note ?? '—'}`,
       `Чеків: ${count('receipt')}, фото звіт: ${count('photo')}`,
@@ -449,7 +449,7 @@ export class ExpenseBotService {
       const mime = f.mime ?? (path.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
       const ext = f.name?.split('.').pop() ?? EXT[mime] ?? path.split('.').pop() ?? 'bin';
       const label = f.kind === 'receipt' ? 'чек' : 'фото';
-      const name = safe(`${e.date} ${e.person ?? 'загальна'} ${e.item} (${label} ${counter[f.kind]})`) + `.${ext}`;
+      const name = safe(`${e.date} ${e.person ?? ''} ${e.item} (${label} ${counter[f.kind]})`) + `.${ext}`;
       const url = await this.google.upload(f.kind, e.date.slice(0, 4), name, mime, data);
       result.push({ kind: f.kind, name, url });
     }
