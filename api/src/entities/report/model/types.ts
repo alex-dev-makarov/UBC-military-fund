@@ -48,13 +48,13 @@ export interface LedgerImport {
     year: number;
     summaryTotal?: number | null;
     hasReceipt?: boolean;
-    // Category split of a summary-only year, e.g. { "Авто": 52311.73 }.
     categories?: Record<string, number>;
   }>;
   expenses: Array<{
     date: string;
     item: string;
     itemEn?: string | null;
+    description?: string | null;
     category?: string | null;
     person?: string | null;
     note?: string | null;
@@ -63,4 +63,33 @@ export interface LedgerImport {
     commission?: number;
     hasReceipt?: boolean;
   }>;
+}
+
+export interface ExpenseInput {
+  date: string;
+  item: string;
+  itemEn: string | null;
+  description: string | null;
+  category: string | null;
+  person: string | null;
+  note: string | null;
+  price: number;
+  delivery: number;
+  commission: number;
+  hasReceipt: boolean;
+}
+
+export type ExpenseField = keyof ExpenseInput;
+
+export interface StoredExpense extends ExpenseInput {
+  id: number;
+  total: number;
+}
+
+export type ExpenseFileKind = 'receipt' | 'photo';
+
+export interface ExpenseFile {
+  kind: ExpenseFileKind;
+  name: string;
+  url: string;
 }

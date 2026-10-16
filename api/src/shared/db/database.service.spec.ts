@@ -22,6 +22,7 @@ describe('DatabaseService', () => {
       'fund_regions',
       'handoff_tokens',
       'login_nonces',
+      'private_expense_files',
       'private_expenses',
       'private_meta',
       'private_year_categories',
@@ -72,6 +73,7 @@ describe('DatabaseService', () => {
       '0013_login_confirm',
       '0014_security_hardening',
       '0015_unified_ledger',
+      '0016_expense_files',
     ]);
   });
 });

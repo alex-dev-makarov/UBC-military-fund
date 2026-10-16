@@ -19,8 +19,8 @@ if (command === 'demo' && process.env.APP_ENV !== 'local' && process.env.APP_ENV
   process.exit(1);
 }
 
-if (command === 'import' && process.env.APP_ENV !== 'prod') {
-  console.error(`імпорт реальних даних дозволений лише на prod (тут APP_ENV=${process.env.APP_ENV ?? '(не задано)'}); для dev/local є demo`);
+if (command === 'import' && process.env.APP_ENV === 'dev') {
+  console.error('імпорт реальних даних на dev заборонений; для dev є demo');
   process.exit(1);
 }
 

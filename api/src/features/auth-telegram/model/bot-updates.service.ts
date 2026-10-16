@@ -1,9 +1,9 @@
-import { Agent, request as undiciRequest } from 'undici';
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { ValidatedEnv } from '../../../shared/config/env.types';
 import { NonceRepository, HandoffRepository } from '../../../entities/login-session';
-import { TelegramService } from '../../../shared/telegram';
+import { TelegramService, BotApi, type Keyboard } from '../../../shared/telegram';
+import { ExpenseBotService } from '../../expense-bot';
 import { UserRepository } from '../../../entities/user';
 import { SecurityLogService } from '../../../shared/log';
 import { HANDOFF_PARAM, SECRET_PATH } from './paths';
@@ -20,6 +20,9 @@ interface TelegramUpdate {
   update_id: number;
   message?: {
     text?: string;
+    caption?: string;
+    photo?: Array<{ file_id: string; file_size?: number }>;
+    document?: { file_id: string; file_name?: string; mime_type?: string };
     chat?: { id: number; type?: string };
     from?: TelegramUser;
   };
@@ -31,15 +34,12 @@ interface TelegramUpdate {
   };
 }
 
-type Keyboard = Array<Array<{ text: string; callback_data?: string; url?: string }>>;
-
 @Injectable()
 export class BotUpdatesService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(BotUpdatesService.name);
   private offset = 0;
   private running = false;
   private loop?: Promise<void>;
-  private readonly dispatcher = new Agent({ connections: 4, pipelining: 0 });
 
   constructor(
     private readonly securityLog: SecurityLogService,
@@ -48,6 +48,8 @@ export class BotUpdatesService implements OnModuleInit, OnModuleDestroy {
     private readonly handoffs: HandoffRepository,
     private readonly telegram: TelegramService,
     private readonly users: UserRepository,
+    private readonly bot: BotApi,
+    private readonly expenses: ExpenseBotService,
   ) {}
 
   onModuleInit(): void {
@@ -61,7 +63,6 @@ export class BotUpdatesService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleDestroy(): Promise<void> {
     this.running = false;
-    await this.dispatcher.close().catch(() => undefined);
     await this.loop?.catch(() => undefined);
   }
 
@@ -97,7 +98,19 @@ export class BotUpdatesService implements OnModuleInit, OnModuleDestroy {
     const from = message?.from;
     const chatId = message?.chat?.id;
     const text = message?.text?.trim();
-    if (!from || !chatId || !text || message.chat?.type !== 'private') return;
+    if (!from || !chatId || message?.chat?.type !== 'private') return;
+    const photo = message.photo?.at(-1);
+    const file = message.document
+      ? { fileId: message.document.file_id, name: message.document.file_name, mime: message.document.mime_type }
+      : photo
+        ? { fileId: photo.file_id, mime: 'image/jpeg' }
+        : null;
+    if (file) {
+      await this.expenses.handleFile(from.id, chatId, file);
+      return;
+    }
+    if (!text) return;
+    if (await this.expenses.handleMessage(from.id, chatId, text)) return;
 
     const match = /^\/start(?:@\w+)?\s+(\S+)$/.exec(text);
     if (!match) {
@@ -147,7 +160,8 @@ export class BotUpdatesService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async handleCallback(query: NonNullable<TelegramUpdate['callback_query']>): Promise<void> {
-    await this.request('answerCallbackQuery', { callback_query_id: query.id }).catch(() => undefined);
+    if (await this.expenses.handleCallback(query)) return;
+    await this.bot.answer(query.id);
     const message = query.message;
     if (!message) return;
 
@@ -218,41 +232,14 @@ export class BotUpdatesService implements OnModuleInit, OnModuleDestroy {
   }
 
   private send(chatId: number, text: string, keyboard?: Keyboard): Promise<unknown> {
-    return this.request('sendMessage', {
-      chat_id: chatId,
-      text,
-      ...(keyboard ? { reply_markup: { inline_keyboard: keyboard } } : {}),
-    }).catch((error) => {
-      this.logger.warn(`sendMessage failed: ${error instanceof Error ? error.message : error}`);
-    });
+    return this.bot.send(chatId, text, keyboard);
   }
 
-  private edit(
-    message: { message_id: number; chat: { id: number } },
-    text: string,
-    keyboard?: Keyboard,
-  ): Promise<unknown> {
-    return this.request('editMessageText', {
-      chat_id: message.chat.id,
-      message_id: message.message_id,
-      text,
-      reply_markup: { inline_keyboard: keyboard ?? [] },
-    }).catch((error) => {
-      this.logger.warn(`editMessageText failed: ${error instanceof Error ? error.message : error}`);
-    });
+  private edit(message: { message_id: number; chat: { id: number } }, text: string, keyboard?: Keyboard): Promise<unknown> {
+    return this.bot.edit(message, text, keyboard);
   }
 
-  private async request(method: string, body: unknown): Promise<unknown> {
-    const response = await undiciRequest(`https://api.telegram.org/bot${this.token}/${method}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-      dispatcher: this.dispatcher,
-      headersTimeout: 30_000,
-      bodyTimeout: 30_000,
-    });
-    const data = (await response.body.json()) as { ok?: boolean; result?: unknown; description?: string };
-    if (!data.ok) throw new Error(`${method}: ${data.description ?? `HTTP ${response.statusCode}`}`);
-    return data.result;
+  private request(method: string, body: unknown): Promise<unknown> {
+    return this.bot.call(method, body);
   }
 }

@@ -24,6 +24,8 @@
     "docker:logs": "docker compose logs -f api",
     "db": "node scripts/db.mjs",
     "expense:add": "node scripts/expense-add.mjs",
+    "google:auth": "node scripts/google-auth.mjs",
+    "data:pull": "ssh ubc-prod 'cd ubc && set -a && . deploy/prod.env && set +a && docker compose exec -T api node scripts/private.mjs export' | docker compose run --rm -T api node scripts/private.mjs import",
     "db:seed": "pnpm --filter api db:seed",
     "private:export": "docker compose exec -T api node scripts/private.mjs export",
     "views": "docker compose exec -T api node scripts/views.mjs",

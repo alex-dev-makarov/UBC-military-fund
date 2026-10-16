@@ -5,7 +5,6 @@ import type { ChatMemberStatus, TelegramApiResponse, TelegramChatMember, Members
 export class TelegramService {
   private botUsername: Promise<string> | null = null;
 
-  /** The bot's @username, asked from Telegram once and cached. */
   getBotUsername(botToken: string): Promise<string> {
     this.botUsername ??= fetch(`https://api.telegram.org/bot${botToken}/getMe`, {
       signal: AbortSignal.timeout(10000),

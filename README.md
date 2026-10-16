@@ -54,8 +54,25 @@ test + ui  →  deploy-api (сервер)  →  deploy-web (Cloudflare)
 ```bash
 pnpm docker:up | pnpm docker:down     # локальний бекенд
 pnpm dev                              # локальний фронт
-pnpm expense:add                      # додати витрату в локальну базу
+pnpm data:pull                        # скопіювати дані prod → локальна база
 pnpm --filter api test                # тести API
 pnpm typecheck                        # перевірка типів фронта
 pnpm views                            # хто відкривав закритий звіт
 ```
+
+## Витрати через бота
+
+Головна база — на prod. Витрати вносять адміни (`ADMIN_TELEGRAM_IDS` у `deploy/prod.env`) прямо в боті:
+
+```
+/add      додати витрату (кроки з кнопками, чеки й фото-звіт файлами)
+/edit     змінити витрату
+/delete   видалити витрату
+/last     10 останніх
+/sync 23  повторно записати витрату 23 у Google Таблицю
+/id       дізнатися свій Telegram ID
+```
+
+Кожна зміна: бекап бази → запис у базу (сайт оновлюється одразу) → рядок у Google Таблиці,
+файли — у папку року на Google Диску.
+

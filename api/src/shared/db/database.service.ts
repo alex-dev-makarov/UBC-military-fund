@@ -1,5 +1,5 @@
-import { dirname } from 'node:path';
-import { mkdirSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { mkdirSync, readdirSync, rmSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -51,6 +51,18 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
 
   onModuleDestroy(): void {
     this.db?.close();
+  }
+
+  backup(label: string, keep = 30): void {
+    if (this.path === ':memory:') return;
+    const dir = dirname(this.path);
+    const stamp = new Date().toISOString().replace(/[-:.]/g, '');
+    this.db.exec(`VACUUM INTO '${join(dir, `backup-${label}-${stamp}.sqlite`)}'`);
+    readdirSync(dir)
+      .filter((name) => name.startsWith(`backup-${label}-`))
+      .sort()
+      .slice(0, -keep)
+      .forEach((name) => rmSync(join(dir, name)));
   }
 
   private migrate(): void {
