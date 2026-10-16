@@ -46,7 +46,7 @@ const FILE_KIND: Record<FileStep, ExpenseFileKind> = { receipts: 'receipt', phot
 
 const ADD_STEPS: Step[] = [
   'date', 'item', 'itemEn', 'description', 'category', 'person',
-  'price', 'delivery', 'commission', 'note', 'receipts', 'photos',
+  'price', 'delivery', 'commission', 'note', 'hasReceipt', 'receipts', 'photos',
 ];
 
 const LABEL: Record<ExpenseField | FileStep, string> = {
@@ -288,7 +288,7 @@ export class ExpenseBotService {
         return void (await this.bot.send(
           chatId,
           'Надішліть чеки: оплата, доставка, інвойс — фото або PDF, до 3.',
-          skip(draft.mode === 'add' ? 'Пропустити' : 'Готово', 'done'),
+          skip(draft.mode === 'add' ? 'Додам пізніше' : 'Готово', 'done'),
         ));
       case 'photos':
         return void (await this.bot.send(
@@ -322,8 +322,11 @@ export class ExpenseBotService {
   }
 
   private async advance(chatId: number, telegramId: number, draft: Draft, current: Step): Promise<void> {
-    const steps = this.google.enabled ? ADD_STEPS : ADD_STEPS.filter((s) => s !== 'receipts' && s !== 'photos');
-    draft.step = steps[steps.indexOf(current) + 1] ?? 'confirm';
+    const skip = (s: Step) =>
+      (!this.google.enabled && (s === 'receipts' || s === 'photos')) || (s === 'receipts' && draft.data.hasReceipt === false);
+    let next = ADD_STEPS.indexOf(current) + 1;
+    while (ADD_STEPS[next] && skip(ADD_STEPS[next]!)) next += 1;
+    draft.step = ADD_STEPS[next] ?? 'confirm';
     return this.ask(chatId, telegramId);
   }
 
@@ -402,12 +405,16 @@ export class ExpenseBotService {
       `Кому: ${e.person ?? '— (без людини)'}`,
       `Сума: ${money(total)} (ціна ${e.price} + доставка ${e.delivery} + комісія ${e.commission})`,
       `Примітка: ${e.note ?? '—'}`,
-      `Чеків: ${count('receipt')}, фото звіт: ${count('photo')}`,
+      `Чек: ${e.hasReceipt ? `є (завантажено ${count('receipt')})` : 'немає'}`,
+      `Фото звіт: ${count('photo')}`,
     ].join('\n');
   }
 
   private async save(chatId: number, telegramId: number, draft: Draft): Promise<void> {
-    const data = { ...(draft.data as ExpenseInput), hasReceipt: draft.files.some((f) => f.kind === 'receipt') };
+    const data = {
+      ...(draft.data as ExpenseInput),
+      hasReceipt: draft.data.hasReceipt === true || draft.files.some((f) => f.kind === 'receipt'),
+    };
     if (draft.files.length > 0) await this.bot.send(chatId, 'Завантажую файли…');
 
     let uploaded: Array<{ kind: ExpenseFileKind; name: string; url: string }> = [];

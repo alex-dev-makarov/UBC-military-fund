@@ -71,11 +71,12 @@ describe('ExpenseBotService', () => {
     await t.press('x:v:0');
     await t.say('15,5');
     await t.press('x:v:-');
+    await t.press('x:v:1');
     await t.service.handleFile(ADMIN, CHAT, { fileId: 'f1' });
     await t.service.handleFile(ADMIN, CHAT, { fileId: 'f2', name: 'invoice.pdf', mime: 'application/pdf' });
     await t.press('x:v:done');
     await t.press('x:v:done');
-    expect(t.last().text).toContain('Чеків: 2, фото звіт: 0');
+    expect(t.last().text).toContain('Чек: є (завантажено 2)');
     await t.press('x:ok');
 
     const [e] = t.ledger.recent(1);
@@ -112,6 +113,7 @@ describe('ExpenseBotService', () => {
     await t.press('x:v:0');
     await t.press('x:v:0');
     await t.press('x:v:-');
+    await t.press('x:v:1');
     for (const id of ['a', 'b', 'c']) await t.service.handleFile(ADMIN, CHAT, { fileId: id });
     expect(t.last().text).toContain('фото-звіт');
   });
@@ -165,9 +167,52 @@ describe('ExpenseBotService', () => {
     await g.press('x:v:0');
     await g.press('x:v:0');
     await g.press('x:v:-');
+    await g.press('x:v:1');
     expect(g.last().text).toContain('Перевірте');
     await g.press('x:ok');
-    expect(g.ledger.recent(1)[0]).toMatchObject({ item: 'X', total: 100, hasReceipt: false });
+    expect(g.ledger.recent(1)[0]).toMatchObject({ item: 'X', total: 100, hasReceipt: true });
+  });
+});
+
+describe('ExpenseBotService receipt question', () => {
+  it('«Немає» skips the receipt upload and goes to photos', async () => {
+    const t = setup();
+    await t.say('/add');
+    await t.say('12.10.2026');
+    await t.say('X');
+    await t.press('x:v:-');
+    await t.press('x:v:-');
+    await t.press(t.button('Інше'));
+    await t.press('x:v:none');
+    await t.say('100');
+    await t.press('x:v:0');
+    await t.press('x:v:0');
+    await t.press('x:v:-');
+    await t.press('x:v:0');
+    expect(t.last().text).toContain('фото-звіт');
+    await t.press('x:v:done');
+    expect(t.last().text).toContain('Чек: немає');
+  });
+
+  it('«Є» without a file keeps the mark so the receipt can be added later', async () => {
+    const t = setup();
+    await t.say('/add');
+    await t.say('12.10.2026');
+    await t.say('X');
+    await t.press('x:v:-');
+    await t.press('x:v:-');
+    await t.press(t.button('Інше'));
+    await t.press('x:v:none');
+    await t.say('100');
+    await t.press('x:v:0');
+    await t.press('x:v:0');
+    await t.press('x:v:-');
+    await t.press('x:v:1');
+    expect(t.last().keyboard!.flat().map((b) => b.text)).toContain('Додам пізніше');
+    await t.press('x:v:done');
+    await t.press('x:v:done');
+    await t.press('x:ok');
+    expect(t.ledger.recent(1)[0]!.hasReceipt).toBe(true);
   });
 });
 
@@ -190,4 +235,3 @@ describe('parseDate', () => {
     expect(parseDate('вчора')! < parseDate('сьогодні')!).toBe(true);
   });
 });
-
