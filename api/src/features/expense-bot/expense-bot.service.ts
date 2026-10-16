@@ -301,7 +301,8 @@ export class ExpenseBotService {
   }
 
   private async advance(chatId: number, telegramId: number, draft: Draft, current: Step): Promise<void> {
-    draft.step = ADD_STEPS[ADD_STEPS.indexOf(current) + 1] ?? 'confirm';
+    const steps = this.google.enabled ? ADD_STEPS : ADD_STEPS.filter((s) => s !== 'receipts' && s !== 'photos');
+    draft.step = steps[steps.indexOf(current) + 1] ?? 'confirm';
     return this.ask(chatId, telegramId);
   }
 
@@ -490,7 +491,9 @@ export class ExpenseBotService {
   private async chooseField(message: BotMessageRef, id: number): Promise<void> {
     const e = this.ledger.get(id);
     if (!e) return void (await this.bot.edit(message, 'Цієї витрати вже немає.'));
-    const fields = Object.keys(LABEL) as Array<ExpenseField | FileStep>;
+    const fields = (Object.keys(LABEL) as Array<ExpenseField | FileStep>).filter(
+      (f) => this.google.enabled || (f !== 'receipts' && f !== 'photos'),
+    );
     const rows: Keyboard = [];
     for (let i = 0; i < fields.length; i += 2) {
       rows.push(fields.slice(i, i + 2).map((f) => ({ text: LABEL[f], callback_data: `x:f:${f}.${id}` })));

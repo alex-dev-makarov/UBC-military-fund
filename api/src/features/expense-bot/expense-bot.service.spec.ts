@@ -151,4 +151,22 @@ describe('ExpenseBotService', () => {
     await t.press(`x:dd:${id}`, STRANGER);
     expect(t.ledger.get(id)).toBeDefined();
   });
+
+  it('without Google skips the receipt and photo steps', async () => {
+    const g = setup(false);
+    await g.say('/add');
+    await g.say('2026-10-12');
+    await g.say('X');
+    await g.press('x:v:-');
+    await g.press('x:v:-');
+    await g.press(g.button('Інше'));
+    await g.press('x:v:none');
+    await g.say('100');
+    await g.press('x:v:0');
+    await g.press('x:v:0');
+    await g.press('x:v:-');
+    expect(g.last().text).toContain('Перевірте');
+    await g.press('x:ok');
+    expect(g.ledger.recent(1)[0]).toMatchObject({ item: 'X', total: 100, hasReceipt: false });
+  });
 });
