@@ -86,6 +86,17 @@ export class GoogleService {
     return file.webViewLink;
   }
 
+  async trash(url: string): Promise<void> {
+    const id = /\/d\/([\w-]+)/.exec(url)?.[1] ?? new URL(url).searchParams.get('id');
+    if (!id) throw new Error(`not a Drive file link: ${url}`);
+    await this.call(
+      'PATCH',
+      `https://www.googleapis.com/drive/v3/files/${id}?supportsAllDrives=true`,
+      JSON.stringify({ trashed: true }),
+      'application/json',
+    );
+  }
+
   private async yearFolder(root: string, year: string): Promise<string> {
     const key = `${root}/${year}`;
     const cached = this.yearFolders.get(key);

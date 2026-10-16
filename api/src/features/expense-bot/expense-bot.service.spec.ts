@@ -18,6 +18,7 @@ function setup(googleEnabled = true) {
   const sent: Sent[] = [];
   const rows = new Map<number, unknown[]>();
   const uploads: string[] = [];
+  const trashed: string[] = [];
   const bot = {
     send: async (_chat: number, text: string, keyboard?: Sent['keyboard']) => void sent.push({ text, keyboard }),
     edit: async (_m: unknown, text: string, keyboard?: Sent['keyboard']) => void sent.push({ text, keyboard }),
@@ -33,6 +34,7 @@ function setup(googleEnabled = true) {
     ensureHeader: async () => undefined,
     syncRow: async (id: number, values: unknown[]) => void rows.set(id, values),
     deleteRow: async (id: number) => void rows.delete(id),
+    trash: async (url: string) => void trashed.push(url),
   };
   const config = { get: (key: string) => (key === 'ADMIN_TELEGRAM_IDS' ? [ADMIN] : undefined) };
   const log = { record: () => undefined };
@@ -43,7 +45,7 @@ function setup(googleEnabled = true) {
   const last = () => sent[sent.length - 1]!;
   const button = (label: string) =>
     last().keyboard!.flat().find((b) => b.text === label)!.callback_data!;
-  return { service, ledger, sent, rows, uploads, say, press, last, button };
+  return { service, ledger, sent, rows, uploads, trashed, say, press, last, button };
 }
 
 describe('ExpenseBotService', () => {
@@ -137,12 +139,19 @@ describe('ExpenseBotService', () => {
       note: null, price: 1, delivery: 0, commission: 0, hasReceipt: false,
     });
     t.rows.set(id, []);
+    t.ledger.addFile(id, 'receipt', 'a.jpg', 'https://drive.google.com/file/d/AAA111/view');
+    t.ledger.addFile(id, 'photo', 'b.jpg', 'https://drive.google.com/file/d/BBB222/view');
     await t.say('/delete');
     await t.press(`x:d:${id}`);
     expect(t.ledger.get(id)).toBeDefined();
     await t.press(`x:dd:${id}`);
     expect(t.ledger.get(id)).toBeUndefined();
     expect(t.rows.has(id)).toBe(false);
+    expect(t.trashed).toEqual([
+      'https://drive.google.com/file/d/AAA111/view',
+      'https://drive.google.com/file/d/BBB222/view',
+    ]);
+    expect(t.ledger.files(id)).toEqual([]);
   });
 
   it('refuses callbacks from non-admins', async () => {
