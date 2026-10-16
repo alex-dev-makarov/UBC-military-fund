@@ -43,6 +43,27 @@ interface DeepLinkLogin {
   cancel: () => void
 }
 
+function usePageActive(): boolean {
+  const [visible, setVisible] = useState(() => document.visibilityState === 'visible')
+  const [focused, setFocused] = useState(true)
+
+  useEffect(() => {
+    const onVisibility = () => setVisible(document.visibilityState === 'visible')
+    const onFocus = () => setFocused(true)
+    const onBlur = () => setFocused(false)
+    document.addEventListener('visibilitychange', onVisibility)
+    window.addEventListener('focus', onFocus)
+    window.addEventListener('blur', onBlur)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility)
+      window.removeEventListener('focus', onFocus)
+      window.removeEventListener('blur', onBlur)
+    }
+  }, [])
+
+  return visible && focused
+}
+
 export function useTelegramDeepLink(onAuthorized: (user: AuthUser) => void): DeepLinkLogin {
   const [phase, setPhase] = useState<Phase>('idle')
   const [nonce, setNonce] = useState<string | null>(null)
@@ -65,9 +86,10 @@ export function useTelegramDeepLink(onAuthorized: (user: AuthUser) => void): Dee
   const [startTelegram] = useStartTelegramMutation()
 
   const shouldPoll = nonce && phase === 'waiting'
+  const active = usePageActive()
 
   const { data: pollResult, error: pollError, refetch: refetchPoll } = usePollTelegramQuery(nonce || '', {
-    skip: !shouldPoll,
+    skip: !shouldPoll || !active,
     pollingInterval: 1500,
   })
 
@@ -109,17 +131,11 @@ export function useTelegramDeepLink(onAuthorized: (user: AuthUser) => void): Dee
   }, [])
 
   useEffect(() => {
-    if (!shouldPoll) return
-    const onVisible = () => {
-      if (document.visibilityState === 'visible') void refetchPoll()
-    }
-    document.addEventListener('visibilitychange', onVisible)
-    window.addEventListener('focus', onVisible)
-    return () => {
-      document.removeEventListener('visibilitychange', onVisible)
-      window.removeEventListener('focus', onVisible)
-    }
-  }, [shouldPoll, refetchPoll])
+    if (!shouldPoll || !active) return
+    try {
+      void refetchPoll()
+    } catch {}
+  }, [shouldPoll, active, refetchPoll])
 
   const start = () => {
     setPhase('waiting')
