@@ -288,7 +288,6 @@ export class LedgerRepository {
       .run(today);
   }
 
-  /** Rows the public report can't place in a category (they fall back to «Інше»). */
   countUncategorized(): number {
     const row = this.database.connection
       .prepare(

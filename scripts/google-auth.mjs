@@ -1,8 +1,5 @@
 #!/usr/bin/env node
 
-// One-time: get a Google refresh token for the bot account.
-// Run on your Mac: pnpm google:auth, then sign in with the BOT Google account.
-
 import { createServer } from 'node:http';
 import { createInterface } from 'node:readline/promises';
 import { spawn } from 'node:child_process';

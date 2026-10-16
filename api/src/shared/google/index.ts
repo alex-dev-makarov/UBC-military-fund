@@ -1,1 +1,1 @@
-export { GoogleService, SHEET_HEADER } from './google.service';
+export { GoogleService } from './google.service';

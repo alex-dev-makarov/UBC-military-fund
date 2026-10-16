@@ -48,7 +48,6 @@ export interface LedgerImport {
     year: number;
     summaryTotal?: number | null;
     hasReceipt?: boolean;
-    // Category split of a summary-only year, e.g. { "Авто": 52311.73 }.
     categories?: Record<string, number>;
   }>;
   expenses: Array<{

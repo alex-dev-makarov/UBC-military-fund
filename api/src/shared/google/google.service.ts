@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { ValidatedEnv } from '../config/env.types';
 
-export const SHEET_HEADER = [
+const SHEET_HEADER = [
   'Витрата', 'Дата', 'Ціна ГРН', 'Доставка', 'Комісія', 'Чи є чек ?', 'Загальна сумма',
   'Кому', 'Категорія', 'Опис', 'Примітка', 'Чеки', 'Фото звіт', 'ID',
 ];
