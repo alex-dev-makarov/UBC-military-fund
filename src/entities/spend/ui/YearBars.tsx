@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import type { YearTotal } from '@shared/api'
 import { useI18n } from '@shared/i18n'
+import { UsdHint, useUsdRate } from '@shared/ui'
 
 export function YearBars({ years }: { years: YearTotal[] }) {
   const [filled, setFilled] = useState(false)
   const { fmt } = useI18n()
+  const rate = useUsdRate()
 
   useEffect(() => {
     const id = setTimeout(() => setFilled(true), 60)
@@ -24,6 +26,7 @@ export function YearBars({ years }: { years: YearTotal[] }) {
           <span className="num mt-0.5 block text-[15px] font-bold tracking-[-.02em]">
             {fmt.uah(year.amount)}
           </span>
+          <UsdHint uah={year.amount} block rate={rate} />
 
           <span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-line">
             <i

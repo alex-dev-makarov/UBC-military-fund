@@ -1,8 +1,10 @@
 import type { SpendItem } from '@shared/api'
 import { useI18n } from '@shared/i18n'
+import { UsdHint, useUsdRate } from '@shared/ui'
 
 export function RecentList({ items }: { items: SpendItem[] }) {
   const { fmt, pick } = useI18n()
+  const rate = useUsdRate()
 
   return (
     <ul className="m-0 list-none p-0">
@@ -15,7 +17,10 @@ export function RecentList({ items }: { items: SpendItem[] }) {
             {fmt.day(item.date)}
           </span>
           <span className="min-w-0 flex-1 tracking-[-.01em]">{pick(item.title)}</span>
-          <span className="num shrink-0 font-bold">{fmt.uah(item.amount)}</span>
+          <span className="num shrink-0 text-right font-bold">
+            {fmt.uah(item.amount)}
+            <UsdHint uah={item.amount} block rate={rate} />
+          </span>
         </li>
       ))}
     </ul>

@@ -4,7 +4,7 @@ import stepNav from '@assets/step-nav.webp'
 import stepStar from '@assets/step-star.webp'
 import { MonoReplica } from '@widgets/mono-replica'
 import { BankMark, banks } from '@entities/bank'
-import { useFund } from '@entities/fund'
+import { markDonationIntent, useFund } from '@entities/fund'
 import { Rich, useT } from '@shared/i18n'
 import {
   BackButton,
@@ -82,7 +82,7 @@ export function MonoPage() {
             </Steps>
 
             <div className="mt-5">
-              <CtaLink href={fund.jarUrl}>{t('mono.cta.monthly')}</CtaLink>
+              <CtaLink href={fund.jarUrl} onClick={markDonationIntent}>{t('mono.cta.monthly')}</CtaLink>
             </div>
 
             <Foot>
@@ -91,7 +91,7 @@ export function MonoPage() {
           </>
         ) : (
           <>
-            <CtaLink href={fund.jarUrl}>{t('mono.cta.once')}</CtaLink>
+            <CtaLink href={fund.jarUrl} onClick={markDonationIntent}>{t('mono.cta.once')}</CtaLink>
             <CtaNote>
               <Rich
                 text={t('mono.once.note')}

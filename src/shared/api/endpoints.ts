@@ -1,5 +1,5 @@
 import { api } from './baseApi'
-import type { AuthUser, PrivateReport, PublicFund } from './types'
+import type { AuthUser, JarBalance, PrivateReport, PublicFund, UsdRate } from './types'
 
 interface PollResponse {
   status: 'pending' | 'authorized' | 'denied' | 'expired'
@@ -20,6 +20,15 @@ const endpoints = api.injectEndpoints({
   endpoints: (build) => ({
     getPublicReport: build.query<PublicFund, void>({
       query: () => '/report/public',
+    }),
+
+    getJarBalance: build.query<JarBalance, void>({
+      query: () => '/report/jar',
+    }),
+
+    getUsdRate: build.query<UsdRate, void>({
+      query: () => '/report/rate',
+      keepUnusedDataFor: 3600,
     }),
 
     getSecretReport: build.query<PrivateReport, void>({
@@ -61,6 +70,8 @@ const endpoints = api.injectEndpoints({
 
 export const {
   useGetPublicReportQuery,
+  useGetJarBalanceQuery,
+  useGetUsdRateQuery,
   useGetSecretReportQuery,
   useGetAuthMeQuery,
   usePollTelegramQuery,

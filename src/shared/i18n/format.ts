@@ -12,6 +12,14 @@ const monthLongCache: Cache<Intl.DateTimeFormat> = {}
 const dayCache: Cache<Intl.DateTimeFormat> = {}
 const pluralCache: Cache<Intl.PluralRules> = {}
 
+const usdWhole = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
+
+const spaced = (nf: Intl.NumberFormat, value: number) =>
+  nf
+    .formatToParts(value)
+    .map((part) => (part.type === 'group' ? '\u00A0' : part.value))
+    .join('')
+
 const monthDate = (month: number) => new Date(Date.UTC(2024, month - 1, 1))
 
 export type PluralKey = 'one' | 'few' | 'many' | 'other'
@@ -22,6 +30,7 @@ const narrow = (rule: Intl.LDMLPluralRule): PluralKey =>
 export interface Fmt {
   uah: (value: number) => string
   uahExact: (value: number) => string
+  usd: (value: number) => string
   share: (part: number, total: number) => string
   monthAxis: (month: number) => string
   monthLong: (month: number) => string
@@ -38,6 +47,8 @@ export function makeFmt(lang: Lang): Fmt {
   const precise = memo(preciseCache, lang, () =>
     new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
   )
+  const num = (nf: Intl.NumberFormat, value: number) =>
+    lang === 'en' ? spaced(nf, value) : nf.format(value)
   const monthShort = memo(monthShortCache, lang, () =>
     new Intl.DateTimeFormat(locale, { month: 'short', timeZone: 'UTC' }),
   )
@@ -50,8 +61,9 @@ export function makeFmt(lang: Lang): Fmt {
   const plural = memo(pluralCache, lang, () => new Intl.PluralRules(locale))
 
   return {
-    uah: (value) => `${whole.format(value)} ₴`,
-    uahExact: (value) => `${precise.format(value)} ₴`,
+    uah: (value) => `${num(whole, value)} ₴`,
+    uahExact: (value) => `${num(precise, value)} ₴`,
+    usd: (value) => `$${spaced(usdWhole, value)}`,
     share: (part, total) => {
       const pct = (part / total) * 100
       return pct < 1 ? '<1%' : `${Math.round(pct)}%`

@@ -20,6 +20,12 @@ export interface SpendItem {
   amount: number;
 }
 
+export interface FundNeed {
+  title: Loc;
+  goal: number;
+  deadline: Loc | null;
+}
+
 export interface PublicFund {
   jarUrl: string;
   card: string;
@@ -29,4 +35,5 @@ export interface PublicFund {
 
   months: Array<[number, number]>;
   recent: SpendItem[];
+  need: FundNeed | null;
 }
