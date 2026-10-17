@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useGetSecretReportQuery, getFetchErrorStatus } from '@shared/api'
 import type { LedgerExpense, LedgerPerson, PrivateReport as PrivateReportDto } from '@shared/api'
 import { useI18n } from '@shared/i18n'
-import { Card } from '@shared/ui'
+import { Card, UsdHint, useUsdRate } from '@shared/ui'
 import { MonthlyBars, type MonthTotal } from './MonthlyBars'
 import { Protected } from './Protected'
 
@@ -96,6 +96,7 @@ export function PrivateReport({ onSessionExpired }: { onSessionExpired?: () => v
 
 function ReportBody({ report, i18n }: { report: PrivateReportDto; i18n: I18n }) {
   const { t, fmt } = i18n
+  const rate = useUsdRate()
   const [person, setPerson] = useState<string | null>(null)
   const [month, setMonth] = useState<number | null>(null)
 
@@ -122,6 +123,7 @@ function ReportBody({ report, i18n }: { report: PrivateReportDto; i18n: I18n }) 
         <span className="num block text-[clamp(26px,7.4vw,33px)] font-extrabold leading-none tracking-[-.03em]">
           {fmt.uahExact(report.total)}
         </span>
+        <UsdHint uah={report.total} block className="mt-1 text-ink-3" rate={rate} />
 
         <div className="mt-4 flex flex-col gap-2.5">
           {report.years.map((year) => (
@@ -136,7 +138,10 @@ function ReportBody({ report, i18n }: { report: PrivateReportDto; i18n: I18n }) 
                         unit: t(`private.unit.${fmt.pluralKey(year.count)}`),
                       })}
                 </span>
-                <span className="num font-semibold text-ink-2">{fmt.uah(year.total)}</span>
+                <span className="num text-right font-semibold text-ink-2">
+                  {fmt.uah(year.total)}
+                  <UsdHint uah={year.total} block rate={rate} />
+                </span>
               </div>
               <div className="h-1.5 overflow-hidden rounded-[4px] bg-line">
                 <i
@@ -216,7 +221,10 @@ function ReportBody({ report, i18n }: { report: PrivateReportDto; i18n: I18n }) 
             <span className="min-w-0 flex-1 tracking-[-.01em] text-ink-2">
               {t('private.summary.row', { year: String(year.year) })}
             </span>
-            <span className="num shrink-0 font-bold">{fmt.uahExact(year.total)}</span>
+            <span className="num shrink-0 text-right font-bold">
+              {fmt.uahExact(year.total)}
+              <UsdHint uah={year.total} block rate={rate} />
+            </span>
           </div>
         ))}
       </Card>
@@ -258,6 +266,7 @@ function MonthDetails({
   i18n: I18n
 }) {
   const { t, fmt } = i18n
+  const rate = useUsdRate()
   const groups = new Map<string, { total: number; items: LedgerExpense[] }>()
   for (const e of expenses) {
     const name = e.person ?? t('private.no.person')
@@ -276,7 +285,10 @@ function MonthDetails({
         <span className="min-w-0 flex-1 text-[13px] font-bold first-letter:uppercase">
           {title} {year}
         </span>
-        <span className="num text-[13px] font-bold">{fmt.uahExact(total)}</span>
+        <span className="num text-right text-[13px] font-bold">
+          {fmt.uahExact(total)}
+          <UsdHint uah={total} block rate={rate} />
+        </span>
         <button
           type="button"
           onClick={onClose}
@@ -298,7 +310,10 @@ function MonthDetails({
               <span className="min-w-0 flex-1">
                 <span className="flex items-baseline gap-2">
                   <span className="min-w-0 flex-1 truncate text-sm font-semibold tracking-[-.01em]">{name}</span>
-                  <span className="num shrink-0 text-sm font-bold">{fmt.uah(group.total)}</span>
+                  <span className="num shrink-0 text-right text-sm font-bold">
+                    {fmt.uah(group.total)}
+                    <UsdHint uah={group.total} block rate={rate} />
+                  </span>
                 </span>
                 <span className="mt-0.5 block text-[11.5px] leading-snug text-ink-3">
                   {group.items.map((e) => `${fmt.day(e.date)} ${e.item}`).join(' · ')}
@@ -333,6 +348,7 @@ function PeopleList({
   i18n: I18n
 }) {
   const { t, fmt } = i18n
+  const rate = useUsdRate()
   const max = people[0]?.total ?? 0
 
   return (
@@ -355,7 +371,10 @@ function PeopleList({
                   <span className="min-w-0 flex-1 truncate text-sm font-semibold tracking-[-.01em]">
                     {p.name}
                   </span>
-                  <span className="num shrink-0 text-sm font-bold">{fmt.uah(p.total)}</span>
+                  <span className="num shrink-0 text-right text-sm font-bold">
+                    {fmt.uah(p.total)}
+                    <UsdHint uah={p.total} block rate={rate} />
+                  </span>
                 </span>
                 <span className="mt-1 flex items-center gap-2">
                   <span className="h-1.5 flex-1 overflow-hidden rounded-[4px] bg-line">
@@ -420,6 +439,7 @@ function Filter({
 
 function Ledger({ expenses, i18n }: { expenses: LedgerExpense[]; i18n: I18n }) {
   const { t, fmt } = i18n
+  const rate = useUsdRate()
 
   const months: Array<{ key: string; items: LedgerExpense[]; total: number }> = []
   for (const expense of expenses) {
@@ -454,7 +474,10 @@ function Ledger({ expenses, i18n }: { expenses: LedgerExpense[]; i18n: I18n }) {
                       {fmt.day(e.date)}
                     </span>
                     <span className="min-w-0 flex-1 text-sm tracking-[-.01em]">{e.item}</span>
-                    <span className="num shrink-0 text-sm font-bold">{fmt.uahExact(e.total)}</span>
+                    <span className="num shrink-0 text-right text-sm font-bold">
+                      {fmt.uahExact(e.total)}
+                      <UsdHint uah={e.total} block rate={rate} />
+                    </span>
                   </div>
                   <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 pl-[48px] text-[11.5px] text-ink-3">
                     <span className="font-semibold text-ink-2">{e.person ?? t('private.no.person')}</span>

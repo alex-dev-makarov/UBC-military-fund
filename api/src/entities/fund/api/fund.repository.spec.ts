@@ -142,3 +142,76 @@ describe('FundRepository.getPublicFund — computed from private_expenses', () =
     expect(body).not.toContain('позика');
   });
 });
+
+describe('FundRepository.getPublicFund — current need', () => {
+  const setMeta = (db: DatabaseService, values: Record<string, string>) => {
+    const insert = db.connection.prepare('INSERT OR REPLACE INTO fund_meta (key, value) VALUES (?, ?)');
+    for (const [key, value] of Object.entries(values)) insert.run(key, value);
+  };
+
+  it('is null when no need keys exist', () => {
+    const { fund } = repo();
+    fund.seedIfEmpty();
+    expect(fund.getPublicFund().need).toBeNull();
+  });
+
+  it('returns the need when title and goal are valid', () => {
+    const { fund, db } = repo();
+    fund.seedIfEmpty();
+    setMeta(db, { 'need.uk': 'тепловізор', 'need.en': 'thermal imager', 'need.goal': '85000' });
+    expect(fund.getPublicFund().need).toEqual({
+      title: { uk: 'тепловізор', en: 'thermal imager' },
+      goal: 85000,
+      deadline: null,
+    });
+  });
+
+  it('falls back to the uk title when the en title is missing', () => {
+    const { fund, db } = repo();
+    fund.seedIfEmpty();
+    setMeta(db, { 'need.uk': 'тепловізор', 'need.goal': '85000' });
+    expect(fund.getPublicFund().need?.title).toEqual({ uk: 'тепловізор', en: 'тепловізор' });
+  });
+
+  it.each(['0', '-5', 'abc', '', '1e5', '0x10', '1.234'])('is null for goal %j', (goal) => {
+    const { fund, db } = repo();
+    fund.seedIfEmpty();
+    setMeta(db, { 'need.uk': 'тепловізор', 'need.goal': goal });
+    expect(fund.getPublicFund().need).toBeNull();
+  });
+
+  it.each([
+    ['85 000', 85000],
+    ['85\u00A0000', 85000],
+    ['85\u202F000.50', 85000.5],
+  ])('accepts goal %j with spaces', (goal, expected) => {
+    const { fund, db } = repo();
+    fund.seedIfEmpty();
+    setMeta(db, { 'need.uk': 'тепловізор', 'need.goal': goal });
+    expect(fund.getPublicFund().need?.goal).toBe(expected);
+  });
+
+  it('returns the deadline with an en fallback to uk', () => {
+    const { fund, db } = repo();
+    fund.seedIfEmpty();
+    setMeta(db, { 'need.uk': 'тепловізор', 'need.goal': '85000', 'need.deadline.uk': 'до кінця жовтня' });
+    expect(fund.getPublicFund().need?.deadline).toEqual({ uk: 'до кінця жовтня', en: 'до кінця жовтня' });
+
+    setMeta(db, { 'need.deadline.en': 'by the end of October' });
+    expect(fund.getPublicFund().need?.deadline?.en).toBe('by the end of October');
+  });
+
+  it('has no deadline when the text is blank', () => {
+    const { fund, db } = repo();
+    fund.seedIfEmpty();
+    setMeta(db, { 'need.uk': 'тепловізор', 'need.goal': '85000', 'need.deadline.uk': '  ' });
+    expect(fund.getPublicFund().need?.deadline).toBeNull();
+  });
+
+  it('is null when the title is blank', () => {
+    const { fund, db } = repo();
+    fund.seedIfEmpty();
+    setMeta(db, { 'need.uk': '  ', 'need.goal': '85000' });
+    expect(fund.getPublicFund().need).toBeNull();
+  });
+});

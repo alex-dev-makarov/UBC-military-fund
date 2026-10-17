@@ -5,11 +5,13 @@ import { useFund } from '@entities/fund'
 import { useI18n, type Fmt, type Translate } from '@shared/i18n'
 import type { PublicFund } from '@shared/api'
 import { useCarousel } from '@shared/lib'
+import { UsdHint } from '@shared/ui'
 
 interface Slide {
   key: string
   label: string
   value: string
+  usd?: number
   caption?: string
   chips?: string[]
   bars?: Array<{ width: string; color: string }>
@@ -31,6 +33,7 @@ function buildSlides(
       key: 'total',
       label: t('deck.total.label'),
       value: fmt.uahExact(total),
+      usd: total,
       caption: t('deck.total.caption'),
       bars: fund.categories.map((category) => ({
         width: `${((category.amount / catTotal) * 100).toFixed(2)}%`,
@@ -47,6 +50,7 @@ function buildSlides(
       key: category.color,
       label: pick(category.name),
       value: fmt.uah(category.amount),
+      usd: category.amount,
       caption: t('deck.category.caption', { share: fmt.share(category.amount, catTotal) }),
       swatch: category.color,
       bars: [{ width: `${((category.amount / catTotal) * 100).toFixed(2)}%`, color: category.color }],
@@ -96,6 +100,9 @@ export function ReportDeck() {
               <span className="num mb-1 block pr-[76px] text-[clamp(21px,5.8vw,25px)] font-semibold leading-tight tracking-[-.015em] text-white">
                 {slide.value}
               </span>
+              {slide.usd !== undefined && (
+                <UsdHint uah={slide.usd} block className="-mt-0.5 mb-1 text-white/70" />
+              )}
 
               {slide.caption && <p className="text-[12.5px] text-white/75">{slide.caption}</p>}
 

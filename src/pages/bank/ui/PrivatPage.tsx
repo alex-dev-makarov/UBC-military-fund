@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { BankMark, banks, privatTransferUrl } from '@entities/bank'
 import { CopyCard } from '@features/copy-card'
-import { useFund } from '@entities/fund'
+import { markDonationIntent, useFund } from '@entities/fund'
 import { Rich, useT } from '@shared/i18n'
 import {
   BackButton,
@@ -96,7 +96,7 @@ export function PrivatPage() {
             </Steps>
 
             <div className="mt-5">
-              <CtaLink href={transferUrl}>{t('privat.cta.monthly')}</CtaLink>
+              <CtaLink href={transferUrl} onClick={markDonationIntent}>{t('privat.cta.monthly')}</CtaLink>
             </div>
 
             <Foot>
@@ -105,7 +105,7 @@ export function PrivatPage() {
           </>
         ) : (
           <>
-            <CtaLink href={transferUrl}>{t('privat.cta.once')}</CtaLink>
+            <CtaLink href={transferUrl} onClick={markDonationIntent}>{t('privat.cta.once')}</CtaLink>
             <CtaNote>{t('privat.once.note')}</CtaNote>
 
             <Divider>{t('privat.divider.manual')}</Divider>

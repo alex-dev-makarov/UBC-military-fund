@@ -2,6 +2,8 @@ export { api } from './baseApi'
 export { getFetchErrorStatus } from './apiError'
 export {
   useGetPublicReportQuery,
+  useGetJarBalanceQuery,
+  useGetUsdRateQuery,
   useGetSecretReportQuery,
   useGetAuthMeQuery,
   usePollTelegramQuery,

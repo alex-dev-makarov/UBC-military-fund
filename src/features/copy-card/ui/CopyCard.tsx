@@ -1,3 +1,4 @@
+import { markDonationIntent } from '@entities/fund'
 import { useT } from '@shared/i18n'
 import { useCopy } from '@shared/lib'
 
@@ -24,7 +25,10 @@ export function CopyCard({ label, value, trust }: Props) {
         </span>
         <button
           type="button"
-          onClick={copy}
+          onClick={() => {
+            markDonationIntent()
+            copy()
+          }}
           className={`min-h-11 shrink-0 rounded-[9px] px-4 text-[13px] font-bold text-white transition-colors ${
             copied ? 'bg-field' : 'bg-[var(--bank-accent)]'
           }`}

@@ -6,9 +6,9 @@ const Arrow = () => (
   </svg>
 )
 
-export function CtaLink({ href, children }: { href: string; children: ReactNode }) {
+export function CtaLink({ href, onClick, children }: { href: string; onClick?: () => void; children: ReactNode }) {
   return (
-    <a className="cta" href={href} target="_blank" rel="noopener">
+    <a className="cta" href={href} target="_blank" rel="noopener" onClick={onClick}>
       {children}
       <Arrow />
     </a>

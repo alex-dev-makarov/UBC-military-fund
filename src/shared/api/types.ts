@@ -20,6 +20,15 @@ export interface SpendItem {
   amount: number
 }
 
+export interface JarBalance {
+  amount: number | null
+  name: string | null
+}
+
+export interface UsdRate {
+  usdRate: number | null
+}
+
 export interface PublicFund {
   jarUrl: string
   card: string
@@ -28,6 +37,7 @@ export interface PublicFund {
   years: YearTotal[]
   months: Array<[number, number]>
   recent: SpendItem[]
+  need: { title: FundLoc; goal: number; deadline: FundLoc | null } | null
 }
 
 export interface AuthUser {

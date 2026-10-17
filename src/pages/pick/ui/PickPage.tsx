@@ -1,4 +1,5 @@
 import logo from '@assets/logo.svg'
+import { JarProgress } from '@widgets/jar-progress'
 import { BankPicker } from '@widgets/bank-picker'
 import { Rich, useT } from '@shared/i18n'
 
@@ -20,7 +21,9 @@ export function PickPage() {
           slots={{ bank: <em className="not-italic text-field">{t('pick.title.bank')}</em> }}
         />
       </h1>
-      <p className="mb-5.5 max-w-[34ch] text-[15px] text-ink-2">{t('pick.subtitle')}</p>
+      <p className="mb-4 max-w-[34ch] text-[15px] text-ink-2">{t('pick.subtitle')}</p>
+
+      <JarProgress />
 
       <BankPicker />
     </section>

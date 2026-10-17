@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../../shared/db';
 import { FUND_SEED } from '../model/fund.seed';
-import type { Loc, PublicFund, SpendCategory, SpendItem, YearTotal } from '../model/types';
+import type { FundNeed, Loc, PublicFund, SpendCategory, SpendItem, YearTotal } from '../model/types';
 
 interface MetaRow {
   key: string;
@@ -21,11 +21,31 @@ const RECENT_LIMIT = 10;
 const FALLBACK_CATEGORY = 'Інше';
 
 const asRows = <T>(rows: unknown): T[] => rows as T[];
+const readNeed = (meta: Map<string, string>): FundNeed | null => {
+  const uk = meta.get('need.uk')?.trim();
+  const rawGoal = (meta.get('need.goal') ?? '').replace(/[\s\u00A0\u202F]/g, '');
+  if (!uk || !/^\d+(\.\d{1,2})?$/.test(rawGoal)) return null;
+  const goal = Number(rawGoal);
+  if (goal <= 0) return null;
+  const deadlineUk = meta.get('need.deadline.uk')?.trim();
+  const deadline = deadlineUk
+    ? { uk: deadlineUk, en: meta.get('need.deadline.en')?.trim() || deadlineUk }
+    : null;
+  return { title: { uk, en: meta.get('need.en')?.trim() || uk }, goal, deadline };
+};
+
 const cents = (value: number) => Math.round(value * 100) / 100;
 
 @Injectable()
 export class FundRepository {
   constructor(private readonly database: DatabaseService) {}
+
+  getMeta(key: string): string | null {
+    const row = this.database.connection
+      .prepare('SELECT value FROM fund_meta WHERE key = ?')
+      .get(key) as { value: string } | undefined;
+    return row?.value ?? null;
+  }
 
   seedIfEmpty(): boolean {
     const db = this.database.connection;
@@ -157,6 +177,7 @@ export class FundRepository {
       years,
       months,
       recent,
+      need: readNeed(meta),
     };
   }
 }

@@ -11,7 +11,7 @@ import {
 } from '@entities/spend'
 import { useFund } from '@entities/fund'
 import { useI18n } from '@shared/i18n'
-import { Card } from '@shared/ui'
+import { Card, UsdHint } from '@shared/ui'
 
 const Heading = ({ children }: { children: string }) => (
   <h3 className="mb-2.5 mt-6 pl-0.5 text-[13px] font-bold tracking-[.02em] text-ink-2">{children}</h3>
@@ -38,6 +38,7 @@ export function PublicReport() {
       <span className="num block text-[clamp(26px,7.4vw,33px)] font-extrabold leading-none tracking-[-.03em]">
         {fmt.uahExact(total)}
       </span>
+      <UsdHint uah={total} block className="mt-1 text-ink-3" />
       <YearBars years={fund.years} />
     </Card>
 

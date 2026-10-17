@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import type { SpendCategory } from '@shared/api'
 import { useI18n } from '@shared/i18n'
+import { UsdHint, useUsdRate } from '@shared/ui'
 
 export function CategoryBars({ categories, total }: { categories: SpendCategory[]; total: number }) {
   const [filled, setFilled] = useState(false)
   const { fmt, pick } = useI18n()
+  const rate = useUsdRate()
 
   useEffect(() => {
     const id = setTimeout(() => setFilled(true), 60)
@@ -22,7 +24,10 @@ export function CategoryBars({ categories, total }: { categories: SpendCategory[
             <span className="min-w-0 flex-1 text-sm font-semibold tracking-[-.01em]">
               {pick(category.name)}
             </span>
-            <span className="num shrink-0 text-[13px] text-ink-2">{fmt.uah(category.amount)}</span>
+            <span className="num shrink-0 text-right text-[13px] text-ink-2">
+              {fmt.uah(category.amount)}
+              <UsdHint uah={category.amount} block rate={rate} />
+            </span>
             <span className="num w-[38px] shrink-0 text-right text-xs font-bold text-ink-3">
               {fmt.share(category.amount, total)}
             </span>
