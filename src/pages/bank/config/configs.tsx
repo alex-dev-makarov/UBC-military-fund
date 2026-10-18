@@ -5,9 +5,8 @@ import { MonoReplica } from '@widgets/mono-replica'
 import { banks, privatTransferUrl } from '@entities/bank'
 import type { Bank, BankId } from '@entities/bank'
 import { markDonationIntent } from '@entities/fund'
-import { Rich } from '@shared/i18n'
-import { CtaNote } from '@shared/ui'
-import type { BankPageConfig, BankSlotContext } from './types'
+import { renderMonoOnceNote, renderPrivatPath } from '../ui/slots'
+import type { BankPageConfig } from '../model/types'
 
 function bankById(id: BankId): Bank {
   const bank = banks.find((b) => b.id === id)
@@ -15,54 +14,8 @@ function bankById(id: BankId): Bank {
   return bank
 }
 
-function renderPrivatPath({ t }: BankSlotContext) {
-  return (
-    <div className="mb-4">
-      <p className="mb-2 text-[10.5px] font-medium uppercase tracking-[.12em] text-ink-3">
-        {t('privat.path.label')}
-      </p>
-      <div className="flex flex-wrap items-center gap-1.5 rounded-xl bg-[var(--bank-tint)] px-3 py-3 text-[11px]">
-        <span className="rounded-md border border-line bg-card px-2 py-1.5">
-          {t('privat.path.1')}
-        </span>
-        <span className="text-ink-3">→</span>
-        <span className="rounded-md bg-[var(--bank-accent)] px-2 py-1.5 font-semibold text-white">
-          {t('privat.path.2')}
-        </span>
-        <span className="text-ink-3">→</span>
-        <span className="rounded-md border border-line bg-card px-2 py-1.5">
-          {t('privat.path.3')}
-        </span>
-      </div>
-    </div>
-  )
-}
-
-function renderMonoOnceNote({ t }: BankSlotContext) {
-  return (
-    <CtaNote>
-      <Rich
-        text={t('mono.once.note')}
-        slots={{
-          link: (
-            <a
-              href="https://www.monobank.ua/"
-              target="_blank"
-              rel="noopener"
-              className="font-bold text-[var(--bank-soft)]"
-            >
-              {t('mono.once.download')}
-            </a>
-          ),
-        }}
-      />
-    </CtaNote>
-  )
-}
-
 const monoPageConfig: BankPageConfig = {
   bank: bankById('mono'),
-  titleKey: 'bank.mono.name',
   monthly: [
     { kind: 'note', key: 'mono.note', rich: true },
     { kind: 'divider', key: 'common.divider.steps' },
@@ -111,7 +64,6 @@ const monoPageConfig: BankPageConfig = {
 
 const privatPageConfig: BankPageConfig = {
   bank: bankById('privat'),
-  titleKey: 'bank.privat.name',
   monthly: [
     { kind: 'note', key: 'privat.note', rich: true },
     { kind: 'slot', render: renderPrivatPath },

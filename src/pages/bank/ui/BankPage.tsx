@@ -81,7 +81,7 @@ export function BankPage({ config }: BankPageProps) {
   return (
     <Screen bank={config.bank.id}>
       <BackButton />
-      <Crumb mark={<BankMark bank={config.bank} size="sm" />} title={t(config.titleKey)} />
+      <Crumb mark={<BankMark bank={config.bank} size="sm" />} title={t(config.titleKey ?? config.bank.nameKey)} />
 
       {config.once !== null && (
         <Tabs

@@ -30,7 +30,7 @@ export interface BankStep {
 
 export interface BankPageConfig {
   bank: Bank
-  titleKey: TKey
+  titleKey?: TKey
   monthly: BankBlock[]
   // null: no mode tabs, only `monthly` is shown.
   once: BankBlock[] | null
