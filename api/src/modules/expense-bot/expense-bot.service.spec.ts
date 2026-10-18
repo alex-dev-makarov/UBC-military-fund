@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { DatabaseService } from '../../infra/db';
 import { FundRepository } from '../fund';
-import { LedgerRepository, LedgerService } from '../ledger';
+import { LedgerRepository, LedgerService, ViewLogRepository } from '../ledger';
 import { ExpenseBotService, parseDate } from './expense-bot.service';
 
 const ADMIN = 111;
@@ -15,7 +15,7 @@ function setup(googleEnabled = true) {
   db.onModuleInit();
   new FundRepository(db).seedIfEmpty();
   const repo = new LedgerRepository(db);
-  const ledger = new LedgerService(repo, db);
+  const ledger = new LedgerService(repo, db, new ViewLogRepository(db));
   const sent: Sent[] = [];
   const rows = new Map<number, unknown[]>();
   const uploads: string[] = [];

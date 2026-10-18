@@ -7,6 +7,8 @@ import { AppModule, type ValidatedEnv } from './app';
 import { securityHeaders } from './infra/http';
 
 async function bootstrap() {
+  // Read-only mode is CLI-only; a stray inherited value must not make the server DB read-only.
+  delete process.env.DB_READONLY;
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.disable('x-powered-by');
 

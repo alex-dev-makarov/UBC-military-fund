@@ -18,6 +18,8 @@ export class RetentionService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit(): void {
+    // Read-only CLI boot (DB_READONLY=1): the database is opened read-only, so no purge and no timer.
+    if (process.env.DB_READONLY === '1') return;
     this.purge();
     this.timer = setInterval(() => this.purge(), DAY_MS);
     this.timer.unref();

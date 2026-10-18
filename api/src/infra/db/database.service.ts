@@ -4,7 +4,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { ValidatedEnv } from '../config/env.types';
-import { runMigrations } from './migrator';
+import { pendingMigrations, runMigrations } from './migrator';
 
 export interface DatabaseHealth {
   ok: boolean;
@@ -31,12 +31,28 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     const path = this.config.get('DATABASE_PATH', { infer: true });
     this.path = path;
 
-    if (path !== ':memory:') {
+    // Set by the CLI for commands that must not touch the working database (see CliCommand.readOnly).
+    const readOnly = process.env.DB_READONLY === '1';
+
+    if (path !== ':memory:' && !readOnly) {
 
       mkdirSync(dirname(path), { recursive: true });
     }
 
-    this.db = new DatabaseSync(path);
+    this.db = new DatabaseSync(path, { readOnly });
+
+    if (readOnly) {
+      this.db.exec('PRAGMA foreign_keys = ON');
+      const pending = pendingMigrations(this.db);
+      if (pending.length > 0) {
+        this.db.close();
+        throw new Error(
+          `база ${path} потребує міграцій (${pending.join(', ')}), а команда працює в режимі лише читання — ` +
+            'запустіть застосунок або будь-яку команду без readOnly, щоб застосувати міграції',
+        );
+      }
+      return;
+    }
 
     const journalMode = process.env.SQLITE_JOURNAL_MODE ?? 'DELETE';
     if (!/^(DELETE|WAL|TRUNCATE|PERSIST|MEMORY|OFF)$/i.test(journalMode)) {
@@ -63,6 +79,19 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       .sort()
       .slice(0, -keep)
       .forEach((name) => rmSync(join(dir, name)));
+  }
+
+  /** Row count per user table, for read-only inspection (`cli db:stats`). */
+  tableCounts(): Array<{ name: string; count: number }> {
+    const tables = this.connection
+      .prepare("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name")
+      .all() as Array<{ name: string }>;
+    return tables.map(({ name }) => {
+      const row = this.connection
+        .prepare(`SELECT count(*) AS c FROM "${name.replace(/"/g, '""')}"`)
+        .get() as { c: number };
+      return { name, count: row.c };
+    });
   }
 
   private migrate(): void {

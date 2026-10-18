@@ -28,4 +28,19 @@ describe('ViewLogRepository', () => {
     expect(views[1]!.user_agent).toHaveLength(300);
     expect(views[0]!.ip).toBeNull();
   });
+
+  it('viewsSince returns rows at or after the bound, newest first, in camel case', () => {
+    const db = new DatabaseSync(':memory:');
+    runMigrations(db, join(__dirname, '../../../migrations'));
+    const repo = new ViewLogRepository({ connection: db } as unknown as DatabaseService);
+    repo.record(1, 1000, '1.1.1.1', 'UA');
+    repo.record(2, 5000);
+    repo.record(3, 9000, '2.2.2.2');
+
+    expect(repo.viewsSince(4000)).toEqual([
+      { telegramId: 3, viewedAt: 9000, ip: '2.2.2.2', userAgent: null },
+      { telegramId: 2, viewedAt: 5000, ip: null, userAgent: null },
+    ]);
+    expect(repo.viewsSince(10_000)).toEqual([]);
+  });
 });

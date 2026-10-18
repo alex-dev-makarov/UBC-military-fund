@@ -1,7 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../infra/db';
 import { LedgerRepository } from './ledger.repository';
-import type { ExpenseField, ExpenseFile, ExpenseFileKind, ExpenseInput, StoredExpense } from './ledger.types';
+import { ViewLogRepository, type ViewLogRow } from './view-log.repository';
+import type {
+  ExpenseField,
+  ExpenseFile,
+  ExpenseFileKind,
+  ExpenseInput,
+  LedgerImport,
+  PrivateReport,
+  StoredExpense,
+} from './ledger.types';
 
 const BOT_BACKUP_LABEL = 'bot';
 
@@ -12,6 +21,7 @@ export class LedgerService {
   constructor(
     private readonly ledger: LedgerRepository,
     private readonly database: DatabaseService,
+    private readonly views: ViewLogRepository,
   ) {}
 
   get(id: number): StoredExpense | undefined {
@@ -32,6 +42,29 @@ export class LedgerService {
 
   people(): string[] {
     return this.ledger.people();
+  }
+
+  /** Whole private ledger as import-shaped JSON (`cli ledger:export`). */
+  exportAll(): LedgerImport {
+    return this.ledger.exportAll();
+  }
+
+  /** Replaces the whole private ledger, after a backup (the most destructive write in the codebase). */
+  replaceAll(source: LedgerImport): { years: number; expenses: number } {
+    this.database.backup('import');
+    return this.ledger.replaceAll(source);
+  }
+
+  getReport(): PrivateReport {
+    return this.ledger.getReport();
+  }
+
+  countUncategorized(): number {
+    return this.ledger.countUncategorized();
+  }
+
+  viewsSince(from: number): ViewLogRow[] {
+    return this.views.viewsSince(from);
   }
 
   /** Backs up, then inserts the expense and attaches its uploaded files. */

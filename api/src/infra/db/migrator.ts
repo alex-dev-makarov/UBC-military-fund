@@ -19,6 +19,22 @@ function findMigrationsDir(start: string): string {
   throw new Error(`Could not locate a "migrations" directory above ${start}`);
 }
 
+/** Migration versions on disk that the database has not recorded yet. Read-only: never creates tables. */
+export function pendingMigrations(db: DatabaseSync, migrationsDir?: string): string[] {
+  const dir = migrationsDir ?? findMigrationsDir(__dirname);
+  const hasTable = db.prepare("SELECT 1 FROM sqlite_master WHERE name = 'schema_migrations'").get();
+  const applied = new Set(
+    hasTable
+      ? (db.prepare('SELECT version FROM schema_migrations').all() as Array<{ version: string }>).map((r) => r.version)
+      : [],
+  );
+  return readdirSync(dir)
+    .filter((name) => name.endsWith('.sql'))
+    .sort()
+    .map((file) => file.replace(/\.sql$/, ''))
+    .filter((version) => !applied.has(version));
+}
+
 export function runMigrations(db: DatabaseSync, migrationsDir?: string): MigrationResult {
   const dir = migrationsDir ?? findMigrationsDir(__dirname);
 

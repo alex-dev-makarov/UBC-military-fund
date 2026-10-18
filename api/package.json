@@ -13,7 +13,8 @@
     "smoke": "node scripts/smoke.mjs",
     "test:watch": "vitest",
     "test:all": "pnpm build && pnpm test && pnpm smoke",
-    "db:seed": "node scripts/seed.mjs"
+    "db:seed": "node scripts/seed.mjs",
+    "cli": "node dist/cli/main"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",

@@ -12,8 +12,24 @@ const FILES = [
 ];
 
 describe('LedgerService', () => {
-  let repo: Record<'add' | 'addFile' | 'update' | 'remove' | 'get' | 'recent' | 'files' | 'categories' | 'people', ReturnType<typeof vi.fn>>;
+  let repo: Record<
+    | 'add'
+    | 'addFile'
+    | 'update'
+    | 'remove'
+    | 'get'
+    | 'recent'
+    | 'files'
+    | 'categories'
+    | 'people'
+    | 'exportAll'
+    | 'replaceAll'
+    | 'getReport'
+    | 'countUncategorized',
+    ReturnType<typeof vi.fn>
+  >;
   let database: { backup: ReturnType<typeof vi.fn> };
+  let views: { viewsSince: ReturnType<typeof vi.fn> };
   let service: LedgerService;
 
   beforeEach(() => {
@@ -27,9 +43,14 @@ describe('LedgerService', () => {
       files: vi.fn(),
       categories: vi.fn(),
       people: vi.fn(),
+      exportAll: vi.fn(),
+      replaceAll: vi.fn(),
+      getReport: vi.fn(),
+      countUncategorized: vi.fn(),
     };
     database = { backup: vi.fn() };
-    service = new LedgerService(repo as never, database as never);
+    views = { viewsSince: vi.fn() };
+    service = new LedgerService(repo as never, database as never, views as never);
   });
 
   describe('reads', () => {
@@ -45,6 +66,34 @@ describe('LedgerService', () => {
       expect(repo.categories).toHaveBeenCalledTimes(1);
       expect(repo.people).toHaveBeenCalledTimes(1);
       expect(database.backup).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('ledger-wide operations (CLI)', () => {
+    it('exportAll, getReport and countUncategorized delegate without backing up', () => {
+      service.exportAll();
+      service.getReport();
+      service.countUncategorized();
+      expect(repo.exportAll).toHaveBeenCalledTimes(1);
+      expect(repo.getReport).toHaveBeenCalledTimes(1);
+      expect(repo.countUncategorized).toHaveBeenCalledTimes(1);
+      expect(database.backup).not.toHaveBeenCalled();
+    });
+
+    it('replaceAll backs up first, then delegates the source and returns the repository result', () => {
+      const source = { expenses: [] };
+      repo.replaceAll.mockReturnValue({ years: 0, expenses: 0 });
+      expect(service.replaceAll(source)).toEqual({ years: 0, expenses: 0 });
+      expect(database.backup).toHaveBeenCalledWith('import');
+      expect(repo.replaceAll).toHaveBeenCalledWith(source);
+      expect(database.backup.mock.invocationCallOrder[0]!).toBeLessThan(repo.replaceAll.mock.invocationCallOrder[0]!);
+    });
+
+    it('viewsSince passes the lower bound to the view log and returns its rows', () => {
+      const rows = [{ telegramId: 1, viewedAt: 5, ip: null, userAgent: null }];
+      views.viewsSince.mockReturnValue(rows);
+      expect(service.viewsSince(1_000)).toBe(rows);
+      expect(views.viewsSince).toHaveBeenCalledWith(1_000);
     });
   });
 

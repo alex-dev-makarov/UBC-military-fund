@@ -8,6 +8,7 @@ export type ChatMemberStatus =
 
 export interface TelegramChatMember {
   status: ChatMemberStatus;
+  user?: { first_name: string; last_name?: string; username?: string };
   [key: string]: unknown;
 }
 

@@ -1,4 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
+import { afterEach, describe, expect, it } from 'vitest';
 import { DatabaseService } from './database.service';
 
 export function memoryDatabase(): DatabaseService {
@@ -125,5 +129,55 @@ describe('DatabaseService journal mode', () => {
       if (previous === undefined) delete process.env.SQLITE_JOURNAL_MODE;
       else process.env.SQLITE_JOURNAL_MODE = previous;
     }
+  });
+});
+
+describe('DatabaseService.tableCounts', () => {
+  it('returns every table with its row count, sorted by name', () => {
+    const db = memoryDatabase();
+    db.connection.prepare("INSERT INTO fund_regions (name_uk, name_en, sort) VALUES ('а', 'a', 0)").run();
+    db.connection.prepare("INSERT INTO fund_regions (name_uk, name_en, sort) VALUES ('б', 'b', 1)").run();
+
+    const counts = db.tableCounts();
+    const names = counts.map((row) => row.name);
+
+    expect(names).toEqual([...names].sort());
+    expect(counts.find((row) => row.name === 'fund_regions')).toEqual({ name: 'fund_regions', count: 2 });
+    expect(counts.find((row) => row.name === 'users')).toEqual({ name: 'users', count: 0 });
+  });
+});
+
+describe('DatabaseService read-only mode (DB_READONLY=1)', () => {
+  afterEach(() => {
+    delete process.env.DB_READONLY;
+  });
+
+  const serviceFor = (path: string): DatabaseService => new DatabaseService({ get: () => path } as never);
+  const freshPath = (): string => join(mkdtempSync(join(tmpdir(), 'dbro-')), 'ro.sqlite');
+
+  it('opens a migrated database read-only and refuses writes', () => {
+    const path = freshPath();
+    const rw = serviceFor(path);
+    rw.onModuleInit();
+    rw.onModuleDestroy();
+
+    process.env.DB_READONLY = '1';
+    const ro = serviceFor(path);
+    ro.onModuleInit();
+    expect(ro.tableCounts().length).toBeGreaterThan(0);
+    expect(() => ro.connection.exec('DELETE FROM users')).toThrow(/readonly/i);
+    ro.onModuleDestroy();
+  });
+
+  it('does not migrate: fails clearly when migrations are pending and leaves the file untouched', () => {
+    const path = freshPath();
+    new DatabaseSync(path).close();
+
+    process.env.DB_READONLY = '1';
+    expect(() => serviceFor(path).onModuleInit()).toThrow(/потребує міграцій/);
+
+    const check = new DatabaseSync(path);
+    expect(check.prepare("SELECT count(*) AS c FROM sqlite_master").get()).toEqual({ c: 0 });
+    check.close();
   });
 });

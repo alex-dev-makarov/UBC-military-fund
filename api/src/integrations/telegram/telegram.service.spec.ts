@@ -92,3 +92,51 @@ describe('TelegramService.getBotUsername', () => {
     expect(fetch).toHaveBeenCalledTimes(2);
   });
 });
+
+describe('TelegramService.getChatMember', () => {
+  const CHAT = '-1001234567890';
+
+  it('posts chat and user ids to the token-scoped endpoint and returns the result', async () => {
+    const fetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      json: async () => ({
+        ok: true,
+        result: { status: 'member', user: { first_name: 'Ada', last_name: 'Lovelace', username: 'ada' } },
+      }),
+    } as Response);
+
+    const result = await new TelegramService().getChatMember(42, CHAT, BOT_TOKEN);
+
+    expect(result).toEqual({
+      status: 'member',
+      user: { first_name: 'Ada', last_name: 'Lovelace', username: 'ada' },
+    });
+    const [url, init] = fetch.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(`https://api.telegram.org/bot${BOT_TOKEN}/getChatMember`);
+    expect(init.method).toBe('POST');
+    expect(JSON.parse(init.body as string)).toEqual({ chat_id: CHAT, user_id: 42 });
+  });
+
+  it('resolves to null when the envelope carries no result (unknown user or bad token)', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      json: async () => ({ ok: false, error_code: 401, description: 'Unauthorized' }),
+    } as Response);
+
+    await expect(new TelegramService().getChatMember(42, CHAT, BOT_TOKEN)).resolves.toBeNull();
+  });
+
+  it('rejects on network failure so callers can tell it from an unknown user', async () => {
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('fetch failed'));
+
+    await expect(new TelegramService().getChatMember(42, CHAT, BOT_TOKEN)).rejects.toThrow('fetch failed');
+  });
+
+  it('rejects when the body is not JSON', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      json: async () => {
+        throw new SyntaxError('Unexpected token <');
+      },
+    } as unknown as Response);
+
+    await expect(new TelegramService().getChatMember(42, CHAT, BOT_TOKEN)).rejects.toThrow(SyntaxError);
+  });
+});

@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import type { ChatMemberStatus, TelegramApiResponse, TelegramChatMember, MembershipResult } from './telegram.types';
+import type {
+  ChatMemberStatus,
+  TelegramApiResponse,
+  TelegramChatMember,
+  MembershipResult,
+} from './telegram.types';
 
 @Injectable()
 export class TelegramService {
@@ -21,20 +26,38 @@ export class TelegramService {
     return this.botUsername;
   }
 
+  /**
+   * Looks up one chat member for the CLI. Resolves to Telegram's `result`, or null when the
+   * envelope carries none (unknown user, bad token). Rejects on network failure, timeout or an
+   * unparseable body, so callers can tell "unknown" apart from "Telegram unreachable".
+   */
+  async getChatMember(
+    userId: number,
+    chatId: number | string,
+    botToken: string,
+  ): Promise<TelegramChatMember | null> {
+    const response = await this.fetchChatMember(userId, chatId, botToken, 8000);
+    const data = (await response.json()) as TelegramApiResponse<TelegramChatMember>;
+    return data.result ?? null;
+  }
+
+  private fetchChatMember(
+    userId: number,
+    chatId: number | string,
+    botToken: string,
+    timeoutMs: number,
+  ): Promise<Response> {
+    return fetch(`https://api.telegram.org/bot${botToken}/getChatMember`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, user_id: userId }),
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+  }
+
   async checkGroupMembership(userId: number, chatId: number | string, botToken: string): Promise<MembershipResult> {
-    const url = `https://api.telegram.org/bot${botToken}/getChatMember`;
-
     try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: chatId,
-          user_id: userId,
-        }),
-
-        signal: AbortSignal.timeout(10000),
-      });
+      const response = await this.fetchChatMember(userId, chatId, botToken, 10000);
 
       if (!response.ok && response.status >= 500) {
         console.error(`Telegram API HTTP error: ${response.status}`);
