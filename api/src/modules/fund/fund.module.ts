@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { FundRepository } from './api/fund.repository';
+import { FundRepository } from './fund.repository';
 
 @Module({
   providers: [FundRepository],

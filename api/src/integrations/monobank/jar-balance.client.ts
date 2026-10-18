@@ -17,11 +17,12 @@ const toUah = (kopecks: number) => Math.round(kopecks) / 100;
 @Injectable()
 export class JarBalanceClient {
   private readonly logger = new Logger(JarBalanceClient.name);
+  // Assumes a single jar URL: the cache is not keyed by URL.
   private cached: { value: JarBalance; at: number } | null = null;
   private lastFailureAt: number | null = null;
   private inflight: Promise<JarBalance> | null = null;
 
-  get(jarUrl: string | null): Promise<JarBalance> {
+  get(jarUrl: () => string | null): Promise<JarBalance> {
     const now = Date.now();
     if (this.cached && now - this.cached.at < TTL_MS) return Promise.resolve(this.cached.value);
     if (this.lastFailureAt !== null && now - this.lastFailureAt < RETRY_MS) return Promise.resolve(this.fallback(now));
@@ -31,9 +32,9 @@ export class JarBalanceClient {
     return this.inflight;
   }
 
-  private async refresh(jarUrl: string | null): Promise<JarBalance> {
+  private async refresh(jarUrl: () => string | null): Promise<JarBalance> {
     try {
-      const sendId = new URL(jarUrl ?? '').pathname.split('/').filter(Boolean).pop();
+      const sendId = new URL(jarUrl() ?? '').pathname.split('/').filter(Boolean).pop();
       if (!sendId) throw new Error('jarUrl has no send id');
 
       const response = await fetch(HANDLER_URL, {

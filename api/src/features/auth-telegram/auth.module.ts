@@ -4,7 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import type { ValidatedEnv } from '../../shared/config/env.types';
 import { UserModule, ChannelMemberGuard, SessionValidGuard } from '../../entities/user';
 import { TelegramModule } from '../../integrations/telegram';
-import { LedgerModule } from '../../entities/report';
+import { LedgerModule } from '../../modules/ledger';
 import { ExpenseBotService } from '../expense-bot';
 import { GoogleModule } from '../../integrations/google';
 import { JwtAuthGuard } from '../../shared/auth';

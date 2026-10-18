@@ -11,7 +11,7 @@ import {
   type ExpenseFileKind,
   type ExpenseInput,
   type StoredExpense,
-} from '../../entities/report';
+} from '../../modules/ledger';
 
 export interface BotCallback {
   id: string;

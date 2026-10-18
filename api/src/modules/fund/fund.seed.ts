@@ -1,4 +1,4 @@
-import type { Loc } from './types';
+import type { Loc } from './fund.types';
 
 export interface FundSeed {
   jarUrl: string;

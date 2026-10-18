@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { DatabaseSync } from 'node:sqlite';
 import { join } from 'node:path';
-import { runMigrations } from '../../../shared/db/migrator';
+import { runMigrations } from '../../shared/db/migrator';
 import { VIEW_DEDUP_MS, ViewLogRepository } from './view-log.repository';
-import type { DatabaseService } from '../../../shared/db';
+import type { DatabaseService } from '../../shared/db';
 
 describe('ViewLogRepository', () => {
   it('records views and returns them newest first', () => {
     const db = new DatabaseSync(':memory:');
-    runMigrations(db, join(__dirname, '../../../../migrations'));
+    runMigrations(db, join(__dirname, '../../../migrations'));
     const repo = new ViewLogRepository({ connection: db } as unknown as DatabaseService);
     const since = (from: number) =>
       db

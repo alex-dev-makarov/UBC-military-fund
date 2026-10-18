@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { DatabaseService } from '../../../shared/db';
-import { FUND_SEED } from '../model/fund.seed';
-import type { FundNeed, Loc, PublicFund, SpendCategory, SpendItem, YearTotal } from '../model/types';
+import { DatabaseService } from '../../shared/db';
+import { FUND_SEED } from './fund.seed';
+import type { FundNeed, Loc, PublicFund, SpendCategory, SpendItem, YearTotal } from './fund.types';
 
 interface MetaRow {
   key: string;

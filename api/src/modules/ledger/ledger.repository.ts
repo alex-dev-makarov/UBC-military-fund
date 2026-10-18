@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { DatabaseService } from '../../../shared/db';
+import { DatabaseService } from '../../shared/db';
 import type {
   ExpenseFile,
   ExpenseFileKind,
@@ -11,7 +11,7 @@ import type {
   LedgerPerson,
   LedgerYear,
   PrivateReport,
-} from '../model/types';
+} from './ledger.types';
 
 interface ExpenseRow {
   id: number;

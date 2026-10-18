@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { DatabaseService } from '../../shared/db';
-import { FundRepository } from '../../entities/fund';
-import { LedgerRepository } from '../../entities/report';
+import { FundRepository } from '../../modules/fund';
+import { LedgerRepository } from '../../modules/ledger';
 import { ExpenseBotService, parseDate } from './expense-bot.service';
 
 const ADMIN = 111;

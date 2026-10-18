@@ -1,6 +1,6 @@
-export { LedgerModule } from './report.module';
-export { LedgerRepository } from './api/ledger.repository';
-export { ViewLogRepository } from './api/view-log.repository';
+export { LedgerModule } from './ledger.module';
+export { LedgerRepository } from './ledger.repository';
+export { ViewLogRepository } from './view-log.repository';
 export type {
   ExpenseFile,
   ExpenseFileKind,
@@ -13,4 +13,4 @@ export type {
   PrivateReport,
   PrivateReportView,
   ReportViewer,
-} from './model/types';
+} from './ledger.types';

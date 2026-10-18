@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { DatabaseService } from '../../../shared/db';
-import { FUND_SEED } from '../model/fund.seed';
+import { DatabaseService } from '../../shared/db';
+import { FUND_SEED } from './fund.seed';
 import { FundRepository } from './fund.repository';
 
 function repo(): { fund: FundRepository; db: DatabaseService } {

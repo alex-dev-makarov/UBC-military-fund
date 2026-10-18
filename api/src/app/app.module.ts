@@ -5,7 +5,7 @@ import { DatabaseModule } from '../shared/db';
 import { SecurityLogModule } from '../shared/log';
 import { HealthController } from '../shared/health';
 import { AuthModule } from '../features/auth-telegram';
-import { ReportModule } from '../features/report-access';
+import { ReportModule } from '../modules/report';
 import { validate } from './config/env';
 
 @Module({

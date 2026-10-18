@@ -6,7 +6,7 @@ process.env.TELEGRAM_BOT_POLLING = 'false';
 
 const { NestFactory } = await import('@nestjs/core');
 const { AppModule } = await import('../dist/app/app.module.js');
-const { LedgerRepository } = await import('../dist/entities/report/api/ledger.repository.js');
+const { LedgerRepository } = await import('../dist/modules/ledger/ledger.repository.js');
 
 const command = process.argv[2];
 if (!['export', 'import', 'demo'].includes(command)) {
