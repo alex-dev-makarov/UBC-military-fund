@@ -1,3 +1,2 @@
-export { MonoPage } from './ui/MonoPage'
-export { OtherPage } from './ui/OtherPage'
-export { PrivatPage } from './ui/PrivatPage'
+export { BankPage } from './ui/BankPage'
+export { monoPageConfig, otherPageConfig, privatPageConfig } from './model/configs'

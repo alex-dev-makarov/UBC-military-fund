@@ -1,5 +1,5 @@
 import { Route, Routes } from 'react-router'
-import { MonoPage, OtherPage, PrivatPage } from '@pages/bank'
+import { BankPage, monoPageConfig, otherPageConfig, privatPageConfig } from '@pages/bank'
 import { PickPage } from '@pages/pick'
 import { ReportPage } from '@pages/report'
 import { SecretPage } from '@pages/secret'
@@ -13,9 +13,9 @@ export function AppRoutes() {
       <Route path="/report" element={<ReportPage />} />
       <Route path={SECRET_PATH} element={<SecretPage />} />
       <Route path={DENIED_PATH} element={<MembersDeniedPage />} />
-      <Route path="/mono" element={<MonoPage />} />
-      <Route path="/privat" element={<PrivatPage />} />
-      <Route path="/other" element={<OtherPage />} />
+      <Route path="/mono" element={<BankPage key="mono" config={monoPageConfig} />} />
+      <Route path="/privat" element={<BankPage key="privat" config={privatPageConfig} />} />
+      <Route path="/other" element={<BankPage key="other" config={otherPageConfig} />} />
       <Route path="*" element={<PickPage />} />
     </Routes>
   )
