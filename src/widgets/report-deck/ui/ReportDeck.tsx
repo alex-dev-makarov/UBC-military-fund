@@ -2,6 +2,7 @@ import camo from '@assets/camo.svg'
 import { categoriesTotal, totalSpent } from '@entities/spend'
 import { LangSwitch } from '@features/switch-lang'
 import { useFund } from '@entities/fund'
+import { useUsdRate } from '@entities/usd-rate'
 import { useI18n, type Fmt, type Translate } from '@shared/i18n'
 import type { PublicFund } from '@shared/api'
 import { useCarousel } from '@shared/lib'
@@ -63,6 +64,7 @@ function buildSlides(
 export function ReportDeck() {
   const { t, fmt, pick } = useI18n()
   const fund = useFund()
+  const rate = useUsdRate()
   const slides = buildSlides(fund, t, fmt, pick)
   const { index, drag, select, handlers } = useCarousel({ count: slides.length })
 
@@ -101,7 +103,7 @@ export function ReportDeck() {
                 {slide.value}
               </span>
               {slide.usd !== undefined && (
-                <UsdHint uah={slide.usd} block className="-mt-0.5 mb-1 text-white/70" />
+                <UsdHint uah={slide.usd} block className="-mt-0.5 mb-1 text-white/70" rate={rate} />
               )}
 
               {slide.caption && <p className="text-[12.5px] text-white/75">{slide.caption}</p>}

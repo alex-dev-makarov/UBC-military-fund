@@ -1,12 +1,19 @@
 import { useEffect, useState } from 'react'
 import type { SpendCategory } from '@shared/api'
 import { useI18n } from '@shared/i18n'
-import { UsdHint, useUsdRate } from '@shared/ui'
+import { UsdHint } from '@shared/ui'
 
-export function CategoryBars({ categories, total }: { categories: SpendCategory[]; total: number }) {
+export function CategoryBars({
+  categories,
+  total,
+  rate,
+}: {
+  categories: SpendCategory[]
+  total: number
+  rate: number | null
+}) {
   const [filled, setFilled] = useState(false)
   const { fmt, pick } = useI18n()
-  const rate = useUsdRate()
 
   useEffect(() => {
     const id = setTimeout(() => setFilled(true), 60)

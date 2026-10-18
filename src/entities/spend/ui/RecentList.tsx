@@ -1,10 +1,9 @@
 import type { SpendItem } from '@shared/api'
 import { useI18n } from '@shared/i18n'
-import { UsdHint, useUsdRate } from '@shared/ui'
+import { UsdHint } from '@shared/ui'
 
-export function RecentList({ items }: { items: SpendItem[] }) {
+export function RecentList({ items, rate }: { items: SpendItem[]; rate: number | null }) {
   const { fmt, pick } = useI18n()
-  const rate = useUsdRate()
 
   return (
     <ul className="m-0 list-none p-0">

@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
 import type { YearTotal } from '@shared/api'
 import { useI18n } from '@shared/i18n'
-import { UsdHint, useUsdRate } from '@shared/ui'
+import { UsdHint } from '@shared/ui'
 
-export function YearBars({ years }: { years: YearTotal[] }) {
+export function YearBars({ years, rate }: { years: YearTotal[]; rate: number | null }) {
   const [filled, setFilled] = useState(false)
   const { fmt } = useI18n()
-  const rate = useUsdRate()
 
   useEffect(() => {
     const id = setTimeout(() => setFilled(true), 60)
