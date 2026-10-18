@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { DatabaseSync } from 'node:sqlite';
 import { join } from 'node:path';
-import { runMigrations } from '../../shared/db/migrator';
+import { runMigrations } from '../../infra/db/migrator';
 import { VIEW_DEDUP_MS, ViewLogRepository } from './view-log.repository';
-import type { DatabaseService } from '../../shared/db';
+import type { DatabaseService } from '../../infra/db';
 
 describe('ViewLogRepository', () => {
   it('records views and returns them newest first', () => {

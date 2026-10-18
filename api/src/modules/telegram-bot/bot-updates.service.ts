@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { ValidatedEnv } from '../../shared/config/env.types';
+import type { ValidatedEnv } from '../../infra/config/env.types';
 import { BotApi, type Keyboard } from '../../integrations/telegram';
 import { BotLoginService } from '../auth';
 import { ExpenseBotService } from '../expense-bot';
@@ -57,10 +57,6 @@ export class BotUpdatesService implements OnModuleInit, OnModuleDestroy {
   async onModuleDestroy(): Promise<void> {
     this.running = false;
     await this.loop?.catch(() => undefined);
-  }
-
-  private get token(): string {
-    return this.config.get('TELEGRAM_BOT_TOKEN', { infer: true });
   }
 
   private async poll(): Promise<void> {

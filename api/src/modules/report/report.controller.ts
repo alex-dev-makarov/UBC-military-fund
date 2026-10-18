@@ -1,14 +1,13 @@
 import { Controller, Get, Req, UseGuards } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Request } from 'express';
-import type { ValidatedEnv } from '../../shared/config/env.types';
-import { JwtAuthGuard } from '../../shared/auth';
-import { RateLimit, RateLimitGuard, clientIp } from '../../shared/http';
+import type { ValidatedEnv } from '../../infra/config/env.types';
+import { JwtAuthGuard } from '../../infra/auth';
+import { RateLimit, RateLimitGuard, clientIp } from '../../infra/http';
 import { ChannelMemberGuard, SessionValidGuard } from '../user';
 import type { PublicFund } from '../fund';
-import type { JarBalance } from '../../integrations/monobank';
 import type { PrivateReportView } from '../ledger';
-import { ReportService } from './report.service';
+import { ReportService, type JarBalance } from './report.service';
 
 @Controller('report')
 export class ReportController {

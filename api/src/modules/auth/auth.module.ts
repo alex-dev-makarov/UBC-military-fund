@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import type { ValidatedEnv } from '../../shared/config/env.types';
+import type { ValidatedEnv } from '../../infra/config/env.types';
 import { UserModule, ChannelMemberGuard, SessionValidGuard } from '../user';
 import { TelegramModule } from '../../integrations/telegram';
-import { JwtAuthGuard } from '../../shared/auth';
+import { JwtAuthGuard } from '../../infra/auth';
 import { NonceRepository } from './nonce.repository';
 import { HandoffRepository } from './handoff.repository';
 import { AuthService } from './auth.service';

@@ -4,7 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import * as cookieParser from 'cookie-parser';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule, type ValidatedEnv } from './app';
-import { securityHeaders } from './shared/http';
+import { securityHeaders } from './infra/http';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);

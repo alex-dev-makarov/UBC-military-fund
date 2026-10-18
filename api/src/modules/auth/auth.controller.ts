@@ -14,10 +14,10 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { CookieOptions, Request, Response } from 'express';
-import type { ValidatedEnv } from '../../shared/config/env.types';
-import type { AuthUserPayload } from '../../shared/auth/session.types';
-import { JwtAuthGuard } from '../../shared/auth';
-import { RateLimit, RateLimitGuard, clientIp } from '../../shared/http';
+import type { ValidatedEnv } from '../../infra/config/env.types';
+import type { AuthUserPayload } from '../../infra/auth/session.types';
+import { JwtAuthGuard } from '../../infra/auth';
+import { RateLimit, RateLimitGuard, clientIp } from '../../infra/http';
 import { SessionValidGuard } from '../user';
 import { AuthService } from './auth.service';
 

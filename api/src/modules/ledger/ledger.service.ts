@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { DatabaseService } from '../../shared/db';
+import { DatabaseService } from '../../infra/db';
 import { LedgerRepository } from './ledger.repository';
 import type { ExpenseField, ExpenseFile, ExpenseFileKind, ExpenseInput, StoredExpense } from './ledger.types';
 

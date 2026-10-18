@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DatabaseService } from '../../shared/db';
+import { DatabaseService } from '../../infra/db';
 import { NonceRepository } from './nonce.repository';
 
 function repo(): NonceRepository {

@@ -147,6 +147,22 @@ describe('JarBalanceClient', () => {
     expect(getter).toHaveBeenCalledTimes(1);
   });
 
+  it('serves the stale cached value when the jar URL getter throws after the TTL', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(ok({ jarAmount: 900, name: 'Збір' }));
+    vi.stubGlobal('fetch', fetchMock);
+    const service = new JarBalanceClient();
+
+    expect(await service.get(getJarUrl)).toEqual({ amount: 9, name: 'Збір' });
+    vi.advanceTimersByTime(16_000);
+    const throwingGetter = vi.fn((): string | null => {
+      throw new Error('db down');
+    });
+
+    expect(await service.get(throwingGetter)).toEqual({ amount: 9, name: 'Збір' });
+    expect(throwingGetter).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it.each([
     [123, null],
     ['', null],

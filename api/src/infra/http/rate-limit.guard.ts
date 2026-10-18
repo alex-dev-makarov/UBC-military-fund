@@ -10,7 +10,7 @@ import { Reflector } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import type { Request } from 'express';
 import type { ValidatedEnv } from '../config/env.types';
-import { SecurityLogService } from '../log';
+import { SecurityLogService } from '../../modules/security-log';
 import { clientIp } from './client';
 
 interface Limit {

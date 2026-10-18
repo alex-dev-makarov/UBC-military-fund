@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { DatabaseService } from '../../shared/db';
+import { DatabaseService } from '../../infra/db';
 import { FundRepository } from '../fund';
 import { LedgerRepository, LedgerService } from '../ledger';
 import { ExpenseBotService, parseDate } from './expense-bot.service';

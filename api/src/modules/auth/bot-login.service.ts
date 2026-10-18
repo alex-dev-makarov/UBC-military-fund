@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { ValidatedEnv } from '../../shared/config/env.types';
+import type { ValidatedEnv } from '../../infra/config/env.types';
 import { TelegramService, type MembershipResult } from '../../integrations/telegram';
-import { SecurityLogService } from '../../shared/log';
+import { SecurityLogService } from '../security-log';
 import { UserRepository } from '../user';
 import { NonceRepository } from './nonce.repository';
 import { HandoffRepository } from './handoff.repository';

@@ -4,7 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import type { Request } from 'express';
 import type { ValidatedEnv } from '../config/env.types';
 import type { AuthUserPayload } from './session.types';
-import { SecurityLogService } from '../log';
+import { SecurityLogService } from '../../modules/security-log';
 
 declare global {
   namespace Express {

@@ -9,9 +9,9 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Request } from 'express';
-import type { ValidatedEnv } from '../../shared/config/env.types';
+import type { ValidatedEnv } from '../../infra/config/env.types';
 import { TelegramService, type MembershipResult } from '../../integrations/telegram';
-import { SecurityLogService } from '../../shared/log';
+import { SecurityLogService } from '../security-log';
 import { UserRepository } from './user.repository';
 
 @Injectable()

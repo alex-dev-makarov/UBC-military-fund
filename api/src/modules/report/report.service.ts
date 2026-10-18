@@ -3,7 +3,9 @@ import { FundRepository, type PublicFund } from '../fund';
 import { LedgerRepository, ViewLogRepository, type PrivateReportView } from '../ledger';
 import { JarBalanceClient, type JarBalance } from '../../integrations/monobank';
 import { UsdRateClient } from '../../integrations/nbu';
-import { SecurityLogService } from '../../shared/log';
+import { SecurityLogService } from '../security-log';
+
+export type { JarBalance };
 
 @Injectable()
 export class ReportService {

@@ -1,6 +1,6 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import type { Request } from 'express';
-import { SecurityLogService } from '../../shared/log';
+import { SecurityLogService } from '../security-log';
 import { UserRepository } from './user.repository';
 
 @Injectable()

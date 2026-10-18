@@ -1,9 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { ValidatedEnv } from '../../shared/config/env.types';
+import type { ValidatedEnv } from '../../infra/config/env.types';
 import { BotApi, type BotMessageRef, type Keyboard } from '../../integrations/telegram';
 import { GoogleService } from '../../integrations/google';
-import { SecurityLogService } from '../../shared/log';
+import { SecurityLogService } from '../security-log';
 import {
   LedgerService,
   type ExpenseField,

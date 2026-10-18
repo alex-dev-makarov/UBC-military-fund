@@ -1,0 +1,17 @@
+export type SecurityEvent =
+  | 'auth.start'
+  | 'auth.confirm_sent'
+  | 'auth.not_member'
+  | 'auth.wrong_code'
+  | 'auth.login'
+  | 'auth.logout'
+  | 'auth.bad_origin'
+  | 'session.invalid'
+  | 'session.revoked'
+  | 'session.revoked_by_user'
+  | 'report.view'
+  | 'report.forbidden'
+  | 'rate.limited'
+  | 'expense.add'
+  | 'expense.edit'
+  | 'expense.delete';

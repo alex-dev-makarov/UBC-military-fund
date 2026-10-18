@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { DatabaseService } from '../../shared/db';
+import { DatabaseService } from '../../infra/db';
 import type {
   ExpenseFile,
   ExpenseFileKind,

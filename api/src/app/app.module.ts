@@ -1,13 +1,13 @@
 import { join } from 'node:path';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { DatabaseModule } from '../shared/db';
-import { SecurityLogModule } from '../shared/log';
-import { HealthController } from '../shared/health';
+import { DatabaseModule } from '../infra/db';
+import { SecurityLogModule } from '../modules/security-log';
+import { HealthController } from '../infra/health';
 import { AuthModule } from '../modules/auth';
 import { TelegramBotModule } from '../modules/telegram-bot';
 import { ReportModule } from '../modules/report';
-import { validate } from './config/env';
+import { validate } from '../infra/config/env';
 
 @Module({
   imports: [

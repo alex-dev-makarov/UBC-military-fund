@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
-import { DatabaseService } from '../../shared/db';
+import { DatabaseService } from '../../infra/db';
 import type { ConfirmResult, NewNonce, NonceRecord } from './login-session.types';
 
 @Injectable()

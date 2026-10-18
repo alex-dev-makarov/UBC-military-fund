@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { DatabaseService } from '../../shared/db';
+import { DatabaseService } from '../../infra/db';
 
 export const VIEW_DEDUP_MS = 30_000;
 

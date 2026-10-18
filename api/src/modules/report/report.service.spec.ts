@@ -3,7 +3,7 @@ import type { FundRepository } from '../fund';
 import type { LedgerRepository, ViewLogRepository } from '../ledger';
 import type { JarBalanceClient } from '../../integrations/monobank';
 import type { UsdRateClient } from '../../integrations/nbu';
-import type { SecurityLogService } from '../../shared/log';
+import type { SecurityLogService } from '../security-log';
 import { ReportService } from './report.service';
 
 const TELEGRAM_ID = 111;

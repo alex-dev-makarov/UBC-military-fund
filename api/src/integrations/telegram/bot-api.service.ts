@@ -1,7 +1,7 @@
 import { Agent, request } from 'undici';
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { ValidatedEnv } from '../../shared/config/env.types';
+import type { ValidatedEnv } from '../../infra/config/env.types';
 
 export type Keyboard = Array<Array<{ text: string; callback_data?: string; url?: string }>>;
 

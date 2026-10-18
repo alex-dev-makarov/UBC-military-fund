@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { ValidatedEnv } from '../../shared/config/env.types';
-import { SecurityLogService } from '../../shared/log';
+import type { ValidatedEnv } from '../../infra/config/env.types';
+import { SecurityLogService } from '../security-log';
 import { ViewLogRepository } from './view-log.repository';
 
 const DAY_MS = 86_400_000;

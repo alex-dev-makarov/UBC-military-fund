@@ -1,9 +1,9 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import { DatabaseSync } from 'node:sqlite';
 import { join } from 'node:path';
-import { runMigrations } from '../../shared/db/migrator';
+import { runMigrations } from '../../infra/db/migrator';
 import { LedgerRepository } from './ledger.repository';
-import type { DatabaseService } from '../../shared/db';
+import type { DatabaseService } from '../../infra/db';
 
 const makeRepo = () => {
   const db = new DatabaseSync(':memory:');

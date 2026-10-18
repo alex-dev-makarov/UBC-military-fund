@@ -1,12 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
-import { DatabaseService } from '../db';
+import { DatabaseService } from '../../infra/db';
+import { SecurityLogRepository } from './security-log.repository';
 import { SecurityLogService } from './security-log.service';
 
 const setup = () => {
   const db = new DatabaseService({ get: () => ':memory:' } as never);
   db.onModuleInit();
   vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
-  return { db, log: new SecurityLogService(db) };
+  return { db, log: new SecurityLogService(new SecurityLogRepository(db)) };
 };
 
 describe('SecurityLogService', () => {

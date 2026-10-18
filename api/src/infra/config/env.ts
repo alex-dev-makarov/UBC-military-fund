@@ -1,4 +1,4 @@
-import type { ValidatedEnv } from '../../shared/config/env.types';
+import type { ValidatedEnv } from './env.types';
 
 export type { ValidatedEnv };
 

@@ -1,11 +1,11 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import type { ValidatedEnv } from '../../shared/config/env.types';
-import type { AuthUserPayload } from '../../shared/auth/session.types';
+import type { ValidatedEnv } from '../../infra/config/env.types';
+import type { AuthUserPayload } from '../../infra/auth/session.types';
 import { TelegramService } from '../../integrations/telegram';
-import { describeClient } from '../../shared/http';
-import { SecurityLogService } from '../../shared/log';
+import { describeClient } from '../../infra/http';
+import { SecurityLogService } from '../security-log';
 import { UserRepository } from '../user';
 import { NonceRepository } from './nonce.repository';
 import { HandoffRepository } from './handoff.repository';
