@@ -168,26 +168,36 @@ describe('AuthService', () => {
 
     it('returns expired when the nonce record does not exist', async () => {
       expect(await service.pollLogin(NONCE, BINDING, IP)).toEqual({ kind: 'expired' });
+      expect(nonces.consume).not.toHaveBeenCalled();
+      expect(securityLog.record).not.toHaveBeenCalled();
     });
 
     it('returns expired when the record has expired', async () => {
       nonces.find.mockReturnValue(nonceRecord({ expires_at: NOW }));
       expect(await service.pollLogin(NONCE, BINDING, IP)).toEqual({ kind: 'expired' });
+      expect(nonces.consume).not.toHaveBeenCalled();
+      expect(securityLog.record).not.toHaveBeenCalled();
     });
 
     it('returns expired when the binding cookie is missing', async () => {
       nonces.find.mockReturnValue(nonceRecord());
       expect(await service.pollLogin(NONCE, undefined, IP)).toEqual({ kind: 'expired' });
+      expect(nonces.consume).not.toHaveBeenCalled();
+      expect(securityLog.record).not.toHaveBeenCalled();
     });
 
     it('returns expired when the binding cookie does not match', async () => {
       nonces.find.mockReturnValue(nonceRecord());
       expect(await service.pollLogin(NONCE, 'other-binding', IP)).toEqual({ kind: 'expired' });
+      expect(nonces.consume).not.toHaveBeenCalled();
+      expect(securityLog.record).not.toHaveBeenCalled();
     });
 
     it('returns denied when the nonce was denied', async () => {
       nonces.find.mockReturnValue(nonceRecord({ status: 'denied' }));
       expect(await service.pollLogin(NONCE, BINDING, IP)).toEqual({ kind: 'denied' });
+      expect(nonces.consume).not.toHaveBeenCalled();
+      expect(securityLog.record).not.toHaveBeenCalled();
     });
 
     it('returns pending while the nonce is not yet authorized', async () => {

@@ -15,13 +15,13 @@ export type { AuthUserPayload };
 
 const FIRST_NAME = 'Учасник';
 
-export interface IStartLoginInput {
+export interface StartLoginInput {
   origin: string;
   userAgent: string | undefined;
   ip: string | undefined;
 }
 
-export interface IStartLoginResult {
+export interface StartLoginResult {
   nonce: string;
   code: number;
   expiresIn: number;
@@ -91,7 +91,7 @@ export class AuthService {
     return null;
   }
 
-  async startLogin(input: IStartLoginInput): Promise<IStartLoginResult> {
+  async startLogin(input: StartLoginInput): Promise<StartLoginResult> {
     const bot = await this.telegram
       .getBotUsername(this.config.get('TELEGRAM_BOT_TOKEN', { infer: true }))
       .catch(() => {

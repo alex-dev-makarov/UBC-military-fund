@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { DatabaseService } from '../../shared/db';
-import { FundRepository } from '../../modules/fund';
-import { LedgerRepository } from '../../modules/ledger';
+import { FundRepository } from '../fund';
+import { LedgerRepository, LedgerService } from '../ledger';
 import { ExpenseBotService, parseDate } from './expense-bot.service';
 
 const ADMIN = 111;
@@ -14,7 +14,8 @@ function setup(googleEnabled = true) {
   const db = new DatabaseService({ get: () => ':memory:' } as never);
   db.onModuleInit();
   new FundRepository(db).seedIfEmpty();
-  const ledger = new LedgerRepository(db);
+  const repo = new LedgerRepository(db);
+  const ledger = new LedgerService(repo, db);
   const sent: Sent[] = [];
   const rows = new Map<number, unknown[]>();
   const uploads: string[] = [];
@@ -38,14 +39,14 @@ function setup(googleEnabled = true) {
   };
   const config = { get: (key: string) => (key === 'ADMIN_TELEGRAM_IDS' ? [ADMIN] : undefined) };
   const log = { record: () => undefined };
-  const service = new ExpenseBotService(bot as never, ledger, db, google as never, log as never, config as never);
+  const service = new ExpenseBotService(bot as never, ledger, google as never, log as never, config as never);
   const message = { message_id: 1, chat: { id: CHAT } };
   const say = (text: string, from = ADMIN) => service.handleMessage(from, CHAT, text);
   const press = (data: string, from = ADMIN) => service.handleCallback({ id: 'q', from: { id: from }, data, message });
   const last = () => sent[sent.length - 1]!;
   const button = (label: string) =>
     last().keyboard!.flat().find((b) => b.text === label)!.callback_data!;
-  return { service, ledger, sent, rows, uploads, trashed, say, press, last, button };
+  return { service, repo, sent, rows, uploads, trashed, say, press, last, button };
 }
 
 describe('ExpenseBotService', () => {
@@ -81,7 +82,7 @@ describe('ExpenseBotService', () => {
     expect(t.last().text).toContain('Чек: є (завантажено 2)');
     await t.press('x:ok');
 
-    const [e] = t.ledger.recent(1);
+    const [e] = t.repo.recent(1);
     expect(e).toMatchObject({
       date: '2026-10-12', item: 'Ремонт машини', itemEn: null, description: 'заміна зчеплення',
       category: 'Авто', person: 'Лера', price: 21080, delivery: 0, commission: 15.5, hasReceipt: true, total: 21095.5,
@@ -121,7 +122,7 @@ describe('ExpenseBotService', () => {
   });
 
   it('edits one field and resyncs the row', async () => {
-    const id = t.ledger.add({
+    const id = t.repo.add({
       date: '2026-10-12', item: 'Гума', itemEn: null, description: null, category: 'Авто', person: 'Лера',
       note: null, price: 100, delivery: 0, commission: 0, hasReceipt: false,
     });
@@ -129,38 +130,38 @@ describe('ExpenseBotService', () => {
     await t.press(`x:e:${id}`);
     await t.press(`x:f:item.${id}`);
     await t.say('Шини на ЕВАК');
-    expect(t.ledger.get(id)!.item).toBe('Шини на ЕВАК');
+    expect(t.repo.get(id)!.item).toBe('Шини на ЕВАК');
     expect(t.rows.get(id)![0]).toBe('Шини на ЕВАК');
   });
 
   it('deletes after confirmation and removes the sheet row', async () => {
-    const id = t.ledger.add({
+    const id = t.repo.add({
       date: '2026-10-12', item: 'X', itemEn: null, description: null, category: 'Інше', person: null,
       note: null, price: 1, delivery: 0, commission: 0, hasReceipt: false,
     });
     t.rows.set(id, []);
-    t.ledger.addFile(id, 'receipt', 'a.jpg', 'https://drive.google.com/file/d/AAA111/view');
-    t.ledger.addFile(id, 'photo', 'b.jpg', 'https://drive.google.com/file/d/BBB222/view');
+    t.repo.addFile(id, 'receipt', 'a.jpg', 'https://drive.google.com/file/d/AAA111/view');
+    t.repo.addFile(id, 'photo', 'b.jpg', 'https://drive.google.com/file/d/BBB222/view');
     await t.say('/delete');
     await t.press(`x:d:${id}`);
-    expect(t.ledger.get(id)).toBeDefined();
+    expect(t.repo.get(id)).toBeDefined();
     await t.press(`x:dd:${id}`);
-    expect(t.ledger.get(id)).toBeUndefined();
+    expect(t.repo.get(id)).toBeUndefined();
     expect(t.rows.has(id)).toBe(false);
     expect(t.trashed).toEqual([
       'https://drive.google.com/file/d/AAA111/view',
       'https://drive.google.com/file/d/BBB222/view',
     ]);
-    expect(t.ledger.files(id)).toEqual([]);
+    expect(t.repo.files(id)).toEqual([]);
   });
 
   it('refuses callbacks from non-admins', async () => {
-    const id = t.ledger.add({
+    const id = t.repo.add({
       date: '2026-10-12', item: 'X', itemEn: null, description: null, category: 'Інше', person: null,
       note: null, price: 1, delivery: 0, commission: 0, hasReceipt: false,
     });
     await t.press(`x:dd:${id}`, STRANGER);
-    expect(t.ledger.get(id)).toBeDefined();
+    expect(t.repo.get(id)).toBeDefined();
   });
 
   it('without Google skips the receipt and photo steps', async () => {
@@ -179,7 +180,7 @@ describe('ExpenseBotService', () => {
     await g.press('x:v:1');
     expect(g.last().text).toContain('Перевірте');
     await g.press('x:ok');
-    expect(g.ledger.recent(1)[0]).toMatchObject({ item: 'X', total: 100, hasReceipt: true });
+    expect(g.repo.recent(1)[0]).toMatchObject({ item: 'X', total: 100, hasReceipt: true });
   });
 });
 
@@ -221,7 +222,7 @@ describe('ExpenseBotService receipt question', () => {
     await t.press('x:v:done');
     await t.press('x:v:done');
     await t.press('x:ok');
-    expect(t.ledger.recent(1)[0]!.hasReceipt).toBe(true);
+    expect(t.repo.recent(1)[0]!.hasReceipt).toBe(true);
   });
 });
 

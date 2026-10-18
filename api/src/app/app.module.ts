@@ -5,6 +5,7 @@ import { DatabaseModule } from '../shared/db';
 import { SecurityLogModule } from '../shared/log';
 import { HealthController } from '../shared/health';
 import { AuthModule } from '../modules/auth';
+import { TelegramBotModule } from '../modules/telegram-bot';
 import { ReportModule } from '../modules/report';
 import { validate } from './config/env';
 
@@ -22,6 +23,7 @@ import { validate } from './config/env';
     DatabaseModule,
     SecurityLogModule,
     AuthModule,
+    TelegramBotModule,
     ReportModule,
   ],
   controllers: [HealthController],

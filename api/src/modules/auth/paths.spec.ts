@@ -3,8 +3,9 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { HANDOFF_PARAM, SECRET_PATH } from './paths';
 
+// The frontend file (outside api/), which must stay in sync with paths.ts.
 const frontendConstants = readFileSync(
-  join(__dirname, '../../../../src', 'features', 'auth-telegram', 'model', 'constants.ts'),
+  join(__dirname, '../../../../src/features/auth-telegram/model/constants.ts'),
   'utf8',
 );
 

@@ -2,16 +2,15 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { ValidatedEnv } from '../../shared/config/env.types';
 import { BotApi, type BotMessageRef, type Keyboard } from '../../integrations/telegram';
-import { DatabaseService } from '../../shared/db';
 import { GoogleService } from '../../integrations/google';
 import { SecurityLogService } from '../../shared/log';
 import {
-  LedgerRepository,
+  LedgerService,
   type ExpenseField,
   type ExpenseFileKind,
   type ExpenseInput,
   type StoredExpense,
-} from '../../modules/ledger';
+} from '../ledger';
 
 export interface BotCallback {
   id: string;
@@ -106,8 +105,7 @@ export class ExpenseBotService {
 
   constructor(
     private readonly bot: BotApi,
-    private readonly ledger: LedgerRepository,
-    private readonly database: DatabaseService,
+    private readonly ledger: LedgerService,
     private readonly google: GoogleService,
     private readonly securityLog: SecurityLogService,
     private readonly config: ConfigService<ValidatedEnv, true>,
@@ -427,9 +425,7 @@ export class ExpenseBotService {
     }
 
     this.drafts.delete(telegramId);
-    this.database.backup('bot');
-    const id = this.ledger.add(data);
-    for (const f of uploaded) this.ledger.addFile(id, f.kind, f.name, f.url);
+    const id = this.ledger.addExpense(data, uploaded);
     this.securityLog.record('expense.add', { admin: telegramId, id, item: data.item, total: data.price + data.delivery + data.commission });
     await this.bot.send(chatId, `✅ Записано (id ${id}). На сайті вже видно.`);
     await this.pushRow(chatId, id);
@@ -438,7 +434,7 @@ export class ExpenseBotService {
   private async uploadFiles(id: number, e: ExpenseInput, files: PendingFile[]): Promise<void> {
     const offset = { receipt: 0, photo: 0 };
     for (const f of this.ledger.files(id)) offset[f.kind] += 1;
-    for (const f of await this.prepareUploads(e, files, offset)) this.ledger.addFile(id, f.kind, f.name, f.url);
+    this.ledger.appendFiles(id, await this.prepareUploads(e, files, offset));
   }
 
   private async prepareUploads(
@@ -492,8 +488,7 @@ export class ExpenseBotService {
     const before = this.ledger.get(draft.id!);
     if (!before) return void (await this.bot.send(chatId, 'Цієї витрати вже немає.'));
     const value = draft.data[field] as ExpenseInput[typeof field];
-    this.database.backup('bot');
-    this.ledger.update(draft.id!, field, value);
+    this.ledger.updateField(draft.id!, field, value);
     this.securityLog.record('expense.edit', { admin: telegramId, id: draft.id, field, from: before[field], to: value });
     await this.bot.send(chatId, `✅ ${LABEL[field]}: ${this.show(before[field])} → ${this.show(value)}\n${short(this.ledger.get(draft.id!)!)}`);
     await this.pushRow(chatId, draft.id!);
@@ -540,8 +535,7 @@ export class ExpenseBotService {
     const e = this.ledger.get(id);
     if (!e) return void (await this.bot.edit(message, 'Цієї витрати вже немає.'));
     const files = this.ledger.files(id);
-    this.database.backup('bot');
-    this.ledger.remove(id);
+    this.ledger.removeExpense(id);
     this.securityLog.record('expense.delete', { admin: telegramId, id, item: e.item, total: e.total, files: files.length });
     await this.bot.edit(message, `🗑 Видалено: ${short(e)}`);
     if (!this.google.enabled) return;

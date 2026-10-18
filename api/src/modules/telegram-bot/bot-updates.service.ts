@@ -1,13 +1,9 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { ValidatedEnv } from '../../shared/config/env.types';
-import { NonceRepository } from './nonce.repository';
-import { HandoffRepository } from './handoff.repository';
-import { TelegramService, BotApi, type Keyboard } from '../../integrations/telegram';
-import { ExpenseBotService } from '../../features/expense-bot';
-import { UserRepository } from '../user';
-import { SecurityLogService } from '../../shared/log';
-import { HANDOFF_PARAM, SECRET_PATH } from './paths';
+import { BotApi, type Keyboard } from '../../integrations/telegram';
+import { BotLoginService } from '../auth';
+import { ExpenseBotService } from '../expense-bot';
 
 const LINK_LABEL = 'Відкрити закритий звіт';
 const REVOKE = 'revoke';
@@ -43,14 +39,10 @@ export class BotUpdatesService implements OnModuleInit, OnModuleDestroy {
   private loop?: Promise<void>;
 
   constructor(
-    private readonly securityLog: SecurityLogService,
     private readonly config: ConfigService<ValidatedEnv, true>,
-    private readonly nonces: NonceRepository,
-    private readonly handoffs: HandoffRepository,
-    private readonly telegram: TelegramService,
-    private readonly users: UserRepository,
     private readonly bot: BotApi,
     private readonly expenses: ExpenseBotService,
+    private readonly auth: BotLoginService,
   ) {}
 
   onModuleInit(): void {
@@ -122,42 +114,31 @@ export class BotUpdatesService implements OnModuleInit, OnModuleDestroy {
     }
 
     const nonce = match[1]!;
-    const record = this.nonces.find(nonce);
-    if (!record || record.status !== 'pending' || record.expires_at <= Date.now() || !record.choices) {
-      await this.send(chatId, 'Посилання застаріло. Поверніться на сайт і спробуйте ще раз.');
-      return;
+    const result = await this.auth.beginConfirm(nonce, from.id);
+    switch (result.kind) {
+      case 'stale':
+        await this.send(chatId, 'Посилання застаріло. Поверніться на сайт і спробуйте ще раз.');
+        return;
+      case 'unavailable':
+        this.logger.warn(`membership undetermined (${result.reason}) for ${from.id}`);
+        await this.send(chatId, 'Не вдалося перевірити доступ. Спробуйте ще раз за хвилину.');
+        return;
+      case 'not-member':
+        await this.send(chatId, 'Цей акаунт не в закритій групі — доступ не надано.');
+        return;
+      case 'used':
+        await this.send(chatId, 'Посилання вже використане. Поверніться на сайт і спробуйте ще раз.');
+        return;
+      case 'ok':
+        await this.send(
+          chatId,
+          `Вхід на ${this.siteHost()} з пристрою: ${result.client ?? 'невідомий браузер'}.\n\n` +
+            'Натисніть число, яке зараз показує сайт.\n\n' +
+            '⚠️ Якщо ви не входили на сайт щойно — нічого не натискайте.',
+          [result.choices.map((n) => ({ text: n, callback_data: `c:${nonce}:${n}` }))],
+        );
+        return;
     }
-
-    const membership = await this.telegram.checkGroupMembership(
-      from.id,
-      this.config.get('TELEGRAM_CHAT_ID', { infer: true }),
-      this.token,
-    );
-    if (!membership.determined) {
-      this.logger.warn(`membership undetermined (${membership.reason}) for ${from.id}`);
-      await this.send(chatId, 'Не вдалося перевірити доступ. Спробуйте ще раз за хвилину.');
-      return;
-    }
-    if (!membership.isMember) {
-      this.nonces.deny(nonce);
-      this.securityLog.record('auth.not_member', { method: 'bot', telegram_id: from.id });
-      await this.send(chatId, 'Цей акаунт не в закритій групі — доступ не надано.');
-      return;
-    }
-
-    if (!this.nonces.startConfirm(nonce, from.id)) {
-      await this.send(chatId, 'Посилання вже використане. Поверніться на сайт і спробуйте ще раз.');
-      return;
-    }
-
-    this.securityLog.record('auth.confirm_sent', { telegram_id: from.id, client: record.client });
-    await this.send(
-      chatId,
-      `Вхід на ${this.siteHost()} з пристрою: ${record.client ?? 'невідомий браузер'}.\n\n` +
-        'Натисніть число, яке зараз показує сайт.\n\n' +
-        '⚠️ Якщо ви не входили на сайт щойно — нічого не натискайте.',
-      [record.choices.split(',').map((n) => ({ text: n, callback_data: `c:${nonce}:${n}` }))],
-    );
   }
 
   private async handleCallback(query: NonNullable<TelegramUpdate['callback_query']>): Promise<void> {
@@ -173,11 +154,7 @@ export class BotUpdatesService implements OnModuleInit, OnModuleDestroy {
     }
     if (query.data !== REVOKE) return;
 
-    const telegramId = query.from.id;
-    this.users.revokeSessions(telegramId);
-    const logins = this.nonces.denyUnconsumedFor(telegramId);
-    const links = this.handoffs.consumeAllFor(telegramId);
-    this.securityLog.record('session.revoked_by_user', { telegram_id: telegramId, logins, links });
+    this.auth.revokeAll(query.from.id);
     await this.edit(
       message,
       'Усі ваші сесії на сайті завершено, незабрані входи скасовано.\n\n' +
@@ -191,13 +168,12 @@ export class BotUpdatesService implements OnModuleInit, OnModuleDestroy {
     nonce: string,
     picked: number,
   ): Promise<void> {
-    const result = this.nonces.confirm(nonce, telegramId, picked);
-    if (result === 'invalid') {
+    const result = this.auth.pick(nonce, telegramId, picked);
+    if (result.kind === 'invalid') {
       await this.edit(message, 'Посилання застаріло. Поверніться на сайт і спробуйте ще раз.');
       return;
     }
-    if (result === 'wrong') {
-      this.securityLog.record('auth.wrong_code', { telegram_id: telegramId });
+    if (result.kind === 'wrong') {
       await this.edit(
         message,
         'Число не збіглося — вхід скасовано.\n\nЯкщо ви не входили на сайт, нічого робити не потрібно. ' +
@@ -206,11 +182,10 @@ export class BotUpdatesService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    const record = this.nonces.find(nonce);
-    const link = this.handoffLink(telegramId, record?.origin ?? null);
+    const { link } = result;
     const time = new Date().toLocaleTimeString('uk-UA', { timeZone: 'Europe/Kyiv', hour: '2-digit', minute: '2-digit' });
     const text =
-      `✅ Новий вхід: ${record?.client ?? 'невідомий браузер'}, ${time}.\n\n` +
+      `✅ Новий вхід: ${result.client ?? 'невідомий браузер'}, ${time}.\n\n` +
       'Поверніться на сайт — він відкриється сам. Посилання нижче особисте й одноразове, не пересилайте його.\n\n' +
       'Якщо це були не ви — натисніть «Це не я»: усі ваші сесії буде завершено.';
     const notMe = { text: 'Це не я — вийти всюди', callback_data: REVOKE };
@@ -223,13 +198,6 @@ export class BotUpdatesService implements OnModuleInit, OnModuleDestroy {
 
   private siteHost(): string {
     return new URL(this.config.get('PUBLIC_SITE_URL', { infer: true })).host;
-  }
-
-  private handoffLink(telegramId: number, origin: string | null): string {
-    const site: string = origin ?? this.config.get('PUBLIC_SITE_URL', { infer: true });
-    const ttlSec = this.config.get('HANDOFF_TTL_SEC', { infer: true });
-    const handoff = this.handoffs.create(telegramId, ttlSec * 1000, site);
-    return `${site}${SECRET_PATH}#${HANDOFF_PARAM}=${encodeURIComponent(handoff)}`;
   }
 
   private send(chatId: number, text: string, keyboard?: Keyboard): Promise<unknown> {

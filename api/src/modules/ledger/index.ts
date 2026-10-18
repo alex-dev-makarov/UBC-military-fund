@@ -1,5 +1,6 @@
 export { LedgerModule } from './ledger.module';
 export { LedgerRepository } from './ledger.repository';
+export { LedgerService, type LedgerUploadedFile } from './ledger.service';
 export { ViewLogRepository } from './view-log.repository';
 export type {
   ExpenseFile,
