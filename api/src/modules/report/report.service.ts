@@ -1,9 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { FundRepository, type PublicFund } from '../fund';
-import { LedgerRepository, ViewLogRepository, type PrivateReportView } from '../ledger';
+import { FundRepository } from '../fund';
+import { LedgerRepository, ViewLogRepository } from '../ledger';
 import { JarBalanceClient, type JarBalance } from '../../integrations/monobank';
 import { UsdRateClient } from '../../integrations/nbu';
 import { SecurityLogService } from '../security-log';
+import { derivePrivateReport, summarizePublicFund } from './report.math';
+import type { PublicFundReport, SecretReportView } from './report.types';
 
 export type { JarBalance };
 
@@ -18,8 +20,9 @@ export class ReportService {
     private readonly securityLog: SecurityLogService,
   ) {}
 
-  getPublic(): PublicFund {
-    return this.fund.getPublicFund();
+  getPublic(): PublicFundReport {
+    const fund = this.fund.getPublicFund();
+    return { ...fund, summary: summarizePublicFund(fund) };
   }
 
   getJar(): Promise<JarBalance> {
@@ -30,13 +33,15 @@ export class ReportService {
     return { usdRate: await this.usd.get() };
   }
 
-  getSecret(telegramId: number, now: number, ip: string | undefined, userAgent: string | undefined): PrivateReportView {
+  getSecret(telegramId: number, now: number, ip: string | undefined, userAgent: string | undefined): SecretReportView {
     if (this.views.record(telegramId, now, ip, userAgent)) {
       this.securityLog.record('report.view', { telegram_id: telegramId, ip });
     }
+    const report = this.ledger.getReport();
     return {
-      ...this.ledger.getReport(),
+      ...report,
       viewer: { telegramId, viewedAt: new Date(now).toISOString() },
+      derived: derivePrivateReport(report),
     };
   }
 }

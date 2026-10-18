@@ -5,9 +5,8 @@ import type { ValidatedEnv } from '../../infra/config/env.types';
 import { JwtAuthGuard } from '../../infra/auth';
 import { RateLimit, RateLimitGuard, clientIp } from '../../infra/http';
 import { ChannelMemberGuard, SessionValidGuard } from '../user';
-import type { PublicFund } from '../fund';
-import type { PrivateReportView } from '../ledger';
 import { ReportService, type JarBalance } from './report.service';
+import type { PublicFundReport, SecretReportView } from './report.types';
 
 @Controller('report')
 export class ReportController {
@@ -19,7 +18,7 @@ export class ReportController {
   @Get('public')
   @UseGuards(RateLimitGuard)
   @RateLimit(120, 60_000)
-  getPublicReport(): PublicFund {
+  getPublicReport(): PublicFundReport {
     return this.report.getPublic();
   }
 
@@ -40,7 +39,7 @@ export class ReportController {
   @Get('secret')
   @UseGuards(JwtAuthGuard, SessionValidGuard, RateLimitGuard, ChannelMemberGuard)
   @RateLimit(30, 60_000, 'user')
-  getSecretReport(@Req() req: Request): PrivateReportView {
+  getSecretReport(@Req() req: Request): SecretReportView {
     const telegramId = req.user!.sub;
     const now = Date.now();
     const ip = clientIp(req, this.config.get('APP_ENV', { infer: true }) !== 'local');
