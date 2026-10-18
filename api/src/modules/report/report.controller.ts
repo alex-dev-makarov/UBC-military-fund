@@ -4,7 +4,7 @@ import type { Request } from 'express';
 import type { ValidatedEnv } from '../../shared/config/env.types';
 import { JwtAuthGuard } from '../../shared/auth';
 import { RateLimit, RateLimitGuard, clientIp } from '../../shared/http';
-import { ChannelMemberGuard, SessionValidGuard } from '../../entities/user';
+import { ChannelMemberGuard, SessionValidGuard } from '../user';
 import type { PublicFund } from '../fund';
 import type { JarBalance } from '../../integrations/monobank';
 import type { PrivateReportView } from '../ledger';

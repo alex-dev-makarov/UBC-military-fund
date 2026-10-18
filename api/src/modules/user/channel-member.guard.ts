@@ -9,10 +9,10 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Request } from 'express';
-import type { ValidatedEnv } from '../../../shared/config/env.types';
-import { TelegramService, type MembershipResult } from '../../../integrations/telegram';
-import { SecurityLogService } from '../../../shared/log';
-import { UserRepository } from '../api/user.repository';
+import type { ValidatedEnv } from '../../shared/config/env.types';
+import { TelegramService, type MembershipResult } from '../../integrations/telegram';
+import { SecurityLogService } from '../../shared/log';
+import { UserRepository } from './user.repository';
 
 @Injectable()
 export class ChannelMemberGuard implements CanActivate {

@@ -1,7 +1,7 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import type { Request } from 'express';
-import { SecurityLogService } from '../../../shared/log';
-import { UserRepository } from '../api/user.repository';
+import { SecurityLogService } from '../../shared/log';
+import { UserRepository } from './user.repository';
 
 @Injectable()
 export class SessionValidGuard implements CanActivate {

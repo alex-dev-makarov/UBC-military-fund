@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
-import { DatabaseService } from '../../../shared/db';
-import type { ConfirmResult, NewNonce, NonceRecord } from '../model/types';
+import { DatabaseService } from '../../shared/db';
+import type { ConfirmResult, NewNonce, NonceRecord } from './login-session.types';
 
 @Injectable()
 export class NonceRepository {

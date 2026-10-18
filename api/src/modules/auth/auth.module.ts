@@ -2,16 +2,17 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import type { ValidatedEnv } from '../../shared/config/env.types';
-import { UserModule, ChannelMemberGuard, SessionValidGuard } from '../../entities/user';
+import { UserModule, ChannelMemberGuard, SessionValidGuard } from '../user';
 import { TelegramModule } from '../../integrations/telegram';
-import { LedgerModule } from '../../modules/ledger';
-import { ExpenseBotService } from '../expense-bot';
+import { LedgerModule } from '../ledger';
+import { ExpenseBotService } from '../../features/expense-bot';
 import { GoogleModule } from '../../integrations/google';
 import { JwtAuthGuard } from '../../shared/auth';
-import { LoginSessionModule } from '../../entities/login-session';
-import { BotUpdatesService } from './model/bot-updates.service';
-import { AuthService } from './model/auth.service';
-import { AuthController } from './api/auth.controller';
+import { NonceRepository } from './nonce.repository';
+import { HandoffRepository } from './handoff.repository';
+import { BotUpdatesService } from './bot-updates.service';
+import { AuthService } from './auth.service';
+import { AuthController } from './auth.controller';
 
 @Module({
   imports: [
@@ -29,13 +30,14 @@ import { AuthController } from './api/auth.controller';
     }),
 
     UserModule,
-    LoginSessionModule,
     LedgerModule,
     TelegramModule,
     GoogleModule,
   ],
   providers: [
     ExpenseBotService,
+    NonceRepository,
+    HandoffRepository,
     AuthService,
     BotUpdatesService,
     ChannelMemberGuard,
@@ -51,7 +53,6 @@ import { AuthController } from './api/auth.controller';
     SessionValidGuard,
     JwtAuthGuard,
     UserModule,
-    LoginSessionModule,
   ],
 })
 export class AuthModule {}

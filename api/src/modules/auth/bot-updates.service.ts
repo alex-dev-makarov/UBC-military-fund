@@ -1,11 +1,12 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { ValidatedEnv } from '../../../shared/config/env.types';
-import { NonceRepository, HandoffRepository } from '../../../entities/login-session';
-import { TelegramService, BotApi, type Keyboard } from '../../../integrations/telegram';
-import { ExpenseBotService } from '../../expense-bot';
-import { UserRepository } from '../../../entities/user';
-import { SecurityLogService } from '../../../shared/log';
+import type { ValidatedEnv } from '../../shared/config/env.types';
+import { NonceRepository } from './nonce.repository';
+import { HandoffRepository } from './handoff.repository';
+import { TelegramService, BotApi, type Keyboard } from '../../integrations/telegram';
+import { ExpenseBotService } from '../../features/expense-bot';
+import { UserRepository } from '../user';
+import { SecurityLogService } from '../../shared/log';
 import { HANDOFF_PARAM, SECRET_PATH } from './paths';
 
 const LINK_LABEL = 'Відкрити закритий звіт';

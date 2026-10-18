@@ -4,7 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from '../shared/db';
 import { SecurityLogModule } from '../shared/log';
 import { HealthController } from '../shared/health';
-import { AuthModule } from '../features/auth-telegram';
+import { AuthModule } from '../modules/auth';
 import { ReportModule } from '../modules/report';
 import { validate } from './config/env';
 

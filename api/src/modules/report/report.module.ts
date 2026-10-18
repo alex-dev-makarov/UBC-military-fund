@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { AuthModule } from '../../features/auth-telegram';
+import { AuthModule } from '../auth';
 import { FundModule } from '../fund';
 import { LedgerModule } from '../ledger';
 import { MonobankModule } from '../../integrations/monobank';

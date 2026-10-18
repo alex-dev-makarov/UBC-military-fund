@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { HANDOFF_PARAM, SECRET_PATH } from './paths';
 
 const frontendConstants = readFileSync(
-  join(__dirname, '../../../../../src/features/auth-telegram/model/constants.ts'),
+  join(__dirname, '../../../../src', 'features', 'auth-telegram', 'model', 'constants.ts'),
   'utf8',
 );
 
