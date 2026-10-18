@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { SpendCategory } from '@shared/api'
 import { useI18n } from '@shared/i18n'
+import { pct } from '@shared/lib'
 import { UsdHint } from '@shared/ui'
 
 export function CategoryBars({
@@ -43,7 +44,7 @@ export function CategoryBars({
             <i
               className="block h-full rounded-[5px] transition-[width] duration-700 ease-[cubic-bezier(.2,.8,.3,1)]"
               style={{
-                width: filled ? `${((category.amount / total) * 100).toFixed(2)}%` : '0%',
+                width: filled ? pct(category.amount, total) : '0%',
                 background: category.color,
                 transitionDelay: `${position * 70}ms`,
               }}

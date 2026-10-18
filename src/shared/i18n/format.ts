@@ -7,6 +7,7 @@ const memo = <T>(cache: Cache<T>, lang: Lang, make: () => T): T =>
 
 const wholeCache: Cache<Intl.NumberFormat> = {}
 const preciseCache: Cache<Intl.NumberFormat> = {}
+const compactCache: Cache<Intl.NumberFormat> = {}
 const monthShortCache: Cache<Intl.DateTimeFormat> = {}
 const monthLongCache: Cache<Intl.DateTimeFormat> = {}
 const dayCache: Cache<Intl.DateTimeFormat> = {}
@@ -30,6 +31,7 @@ const narrow = (rule: Intl.LDMLPluralRule): PluralKey =>
 export interface Fmt {
   uah: (value: number) => string
   uahExact: (value: number) => string
+  compact: (value: number) => string
   usd: (value: number) => string
   share: (part: number, total: number) => string
   monthAxis: (month: number) => string
@@ -47,6 +49,9 @@ export function makeFmt(lang: Lang): Fmt {
   const precise = memo(preciseCache, lang, () =>
     new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
   )
+  const compactNf = memo(compactCache, lang, () =>
+    new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 0 }),
+  )
   const num = (nf: Intl.NumberFormat, value: number) =>
     lang === 'en' ? spaced(nf, value) : nf.format(value)
   const monthShort = memo(monthShortCache, lang, () =>
@@ -63,6 +68,7 @@ export function makeFmt(lang: Lang): Fmt {
   return {
     uah: (value) => `${num(whole, value)} ₴`,
     uahExact: (value) => `${num(precise, value)} ₴`,
+    compact: (value) => compactNf.format(value),
     usd: (value) => `$${spaced(usdWhole, value)}`,
     share: (part, total) => {
       const pct = (part / total) * 100

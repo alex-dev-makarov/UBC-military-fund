@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { YearTotal } from '@shared/api'
 import { useI18n } from '@shared/i18n'
+import { pct } from '@shared/lib'
 import { UsdHint } from '@shared/ui'
 
 export function YearBars({ years, rate }: { years: YearTotal[]; rate: number | null }) {
@@ -31,7 +32,7 @@ export function YearBars({ years, rate }: { years: YearTotal[]; rate: number | n
             <i
               className="block h-full rounded-full bg-[var(--bank-bar)] transition-[width] duration-700 ease-[cubic-bezier(.2,.8,.3,1)]"
               style={{
-                width: filled ? `${((year.amount / max) * 100).toFixed(2)}%` : '0%',
+                width: filled ? pct(year.amount, max) : '0%',
                 transitionDelay: `${position * 70}ms`,
               }}
             />

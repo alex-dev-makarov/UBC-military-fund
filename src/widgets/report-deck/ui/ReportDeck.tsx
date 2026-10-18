@@ -5,7 +5,7 @@ import { useFund } from '@entities/fund'
 import { useUsdRate } from '@entities/usd-rate'
 import { useI18n, type Fmt, type Translate } from '@shared/i18n'
 import type { PublicFund } from '@shared/api'
-import { useCarousel } from '@shared/lib'
+import { pct, useCarousel } from '@shared/lib'
 import { UsdHint } from '@shared/ui'
 
 interface Slide {
@@ -37,7 +37,7 @@ function buildSlides(
       usd: total,
       caption: t('deck.total.caption'),
       bars: fund.categories.map((category) => ({
-        width: `${((category.amount / catTotal) * 100).toFixed(2)}%`,
+        width: pct(category.amount, catTotal),
         color: category.color,
       })),
     },
@@ -54,7 +54,7 @@ function buildSlides(
       usd: category.amount,
       caption: t('deck.category.caption', { share: fmt.share(category.amount, catTotal) }),
       swatch: category.color,
-      bars: [{ width: `${((category.amount / catTotal) * 100).toFixed(2)}%`, color: category.color }],
+      bars: [{ width: pct(category.amount, catTotal), color: category.color }],
     })),
   ]
 
