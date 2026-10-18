@@ -4,6 +4,27 @@ export type { ValidatedEnv };
 
 const toOrigin = (url: string) => new URL(url.trim()).origin;
 
+/** Raw env keys validate() reads; the CLI loads only these from env files, so it sees what a host-run server sees. */
+export const VALIDATED_ENV_KEYS: readonly string[] = [
+  'APP_ENV',
+  'PORT',
+  'PUBLIC_SITE_URL',
+  'FRONTEND_ORIGIN',
+  'JWT_SECRET',
+  'TELEGRAM_BOT_TOKEN',
+  'TELEGRAM_CHAT_ID',
+  'ADMIN_TELEGRAM_IDS',
+  'TELEGRAM_BOT_POLLING',
+  'GOOGLE_CLIENT_ID',
+  'GOOGLE_CLIENT_SECRET',
+  'GOOGLE_REFRESH_TOKEN',
+  'GOOGLE_SHEET_ID',
+  'GOOGLE_SHEET_GID',
+  'GOOGLE_RECEIPTS_FOLDER_ID',
+  'GOOGLE_PHOTOS_FOLDER_ID',
+  'DATABASE_PATH',
+];
+
 export function validate(raw: Record<string, string | undefined>): ValidatedEnv {
   const appEnv = (raw.APP_ENV ?? 'prod') as ValidatedEnv['APP_ENV'];
   const local = appEnv === 'local';

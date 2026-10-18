@@ -7,7 +7,7 @@ import { ledgerDemoCommand } from './commands/ledger-demo.command';
 import { ledgerImportCommand } from './commands/ledger-import.command';
 import { guardEnv, loadEnvFiles } from './env';
 
-const KEYS = ['APP_ENV', 'D01_PROBE'];
+const KEYS = ['APP_ENV', 'PUBLIC_SITE_URL', 'FOO_UNVALIDATED'];
 
 describe('CLI env guards see env files', () => {
   const saved = KEYS.map((key) => [key, process.env[key]] as const);
@@ -40,10 +40,18 @@ describe('CLI env guards see env files', () => {
 
   it('does not override shell variables, and the first file wins', () => {
     process.env.APP_ENV = 'prod';
-    delete process.env.D01_PROBE;
-    loadEnvFiles([envFile('APP_ENV=dev\nD01_PROBE=first\n'), envFile('D01_PROBE=second\n'), '/nonexistent/.env']);
+    delete process.env.PUBLIC_SITE_URL;
+    loadEnvFiles([envFile('APP_ENV=dev\nPUBLIC_SITE_URL=first\n'), envFile('PUBLIC_SITE_URL=second\n'), '/nonexistent/.env']);
     expect(process.env.APP_ENV).toBe('prod');
-    expect(process.env.D01_PROBE).toBe('first');
+    expect(process.env.PUBLIC_SITE_URL).toBe('first');
+  });
+
+  it('loads only validated keys from env files', () => {
+    delete process.env.APP_ENV;
+    delete process.env.FOO_UNVALIDATED;
+    loadEnvFiles([envFile('FOO_UNVALIDATED=1\nAPP_ENV=dev\n')]);
+    expect(process.env.APP_ENV).toBe('dev');
+    expect(process.env.FOO_UNVALIDATED).toBeUndefined();
   });
 
   it('treats a missing APP_ENV as prod, like the old script message', () => {

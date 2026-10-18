@@ -40,7 +40,7 @@ async function main(argv: readonly string[]): Promise<number> {
   }
 
   // Decided before AppModule is loaded: DatabaseService and RetentionService check it on init.
-  // An inherited value (shell or api/.env*) is cleared for write commands.
+  // An inherited shell value is cleared for write commands.
   const { applyReadOnlyMode } = await import('./read-only-mode');
   applyReadOnlyMode(process.env, command);
 

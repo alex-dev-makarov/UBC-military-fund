@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { validate } from './env';
+import { VALIDATED_ENV_KEYS, validate } from './env';
 
 const base = {
   APP_ENV: 'local',
@@ -38,5 +38,24 @@ describe('config', () => {
   it('keeps the bot on unless switched off', () => {
     expect(validate(base).TELEGRAM_BOT_POLLING).toBe(true);
     expect(validate({ ...base, TELEGRAM_BOT_POLLING: 'false' }).TELEGRAM_BOT_POLLING).toBe(false);
+  });
+
+  it('keeps VALIDATED_ENV_KEYS in sync with the keys validate() reads', () => {
+    const input: Record<string, string> = {
+      ...base,
+      GOOGLE_CLIENT_ID: 'id',
+      GOOGLE_CLIENT_SECRET: 'secret',
+      GOOGLE_REFRESH_TOKEN: 'refresh',
+      GOOGLE_SHEET_ID: 'sheet',
+    };
+    const seen: string[] = [];
+    const spy = new Proxy(input, {
+      get(target, key, receiver) {
+        if (typeof key === 'string') seen.push(key);
+        return Reflect.get(target, key, receiver);
+      },
+    });
+    validate(spy);
+    expect(new Set(seen)).toEqual(new Set(VALIDATED_ENV_KEYS));
   });
 });
