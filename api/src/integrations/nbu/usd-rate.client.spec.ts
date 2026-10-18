@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { UsdRateService } from './usd-rate.service';
+import { UsdRateClient } from './usd-rate.client';
 
 const DAY = 24 * 60 * 60_000;
 const ok = (body: unknown) => ({ ok: true, status: 200, json: async () => body });
 const nbu = (rate: unknown) => ok([{ rate, cc: 'USD', exchangedate: '19.10.2026' }]);
 
-describe('UsdRateService', () => {
+describe('UsdRateClient', () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -18,13 +18,13 @@ describe('UsdRateService', () => {
   it('parses the NBU rate', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(nbu(44.8625)));
 
-    expect(await new UsdRateService().get()).toBe(44.8625);
+    expect(await new UsdRateClient().get()).toBe(44.8625);
   });
 
   it('serves from cache within the TTL, then returns the stale rate at once and refreshes in the background', async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(nbu(44)).mockResolvedValue(nbu(45));
     vi.stubGlobal('fetch', fetchMock);
-    const service = new UsdRateService();
+    const service = new UsdRateClient();
 
     await service.get();
     vi.advanceTimersByTime(6 * DAY);
@@ -42,7 +42,7 @@ describe('UsdRateService', () => {
 
   it('caps the first call at 1s when upstream is slow', async () => {
     vi.stubGlobal('fetch', vi.fn().mockReturnValue(new Promise(() => {})));
-    const service = new UsdRateService();
+    const service = new UsdRateClient();
 
     const pending = service.get();
     await vi.advanceTimersByTimeAsync(1_000);
@@ -52,7 +52,7 @@ describe('UsdRateService', () => {
   it('shares one in-flight request between concurrent callers', async () => {
     const fetchMock = vi.fn().mockResolvedValue(nbu(44));
     vi.stubGlobal('fetch', fetchMock);
-    const service = new UsdRateService();
+    const service = new UsdRateClient();
 
     await Promise.all([service.get(), service.get()]);
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -61,7 +61,7 @@ describe('UsdRateService', () => {
   it('does not call upstream during the retry window after a failure, then retries', async () => {
     const fetchMock = vi.fn().mockRejectedValue(new Error('down'));
     vi.stubGlobal('fetch', fetchMock);
-    const service = new UsdRateService();
+    const service = new UsdRateClient();
 
     expect(await service.get()).toBeNull();
     await service.get();
@@ -77,7 +77,7 @@ describe('UsdRateService', () => {
   it('returns the last good rate on failure until it is 14 days old', async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(nbu(44)).mockRejectedValue(new Error('down'));
     vi.stubGlobal('fetch', fetchMock);
-    const service = new UsdRateService();
+    const service = new UsdRateClient();
 
     await service.get();
     vi.advanceTimersByTime(8 * DAY);
@@ -92,13 +92,13 @@ describe('UsdRateService', () => {
     async (payload) => {
       vi.stubGlobal('fetch', vi.fn().mockResolvedValue(ok(payload)));
 
-      expect(await new UsdRateService().get()).toBeNull();
+      expect(await new UsdRateClient().get()).toBeNull();
     },
   );
 
   it('returns null on a non-ok status', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 503, json: async () => ({}) }));
 
-    expect(await new UsdRateService().get()).toBeNull();
+    expect(await new UsdRateClient().get()).toBeNull();
   });
 });

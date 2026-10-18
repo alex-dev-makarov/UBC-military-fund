@@ -10,7 +10,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import type { Request } from 'express';
 import type { ValidatedEnv } from '../../../shared/config/env.types';
-import { TelegramService, type MembershipResult } from '../../../shared/telegram';
+import { TelegramService, type MembershipResult } from '../../../integrations/telegram';
 import { SecurityLogService } from '../../../shared/log';
 import { UserRepository } from '../api/user.repository';
 

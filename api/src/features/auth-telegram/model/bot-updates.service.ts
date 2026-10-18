@@ -2,7 +2,7 @@ import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/commo
 import { ConfigService } from '@nestjs/config';
 import type { ValidatedEnv } from '../../../shared/config/env.types';
 import { NonceRepository, HandoffRepository } from '../../../entities/login-session';
-import { TelegramService, BotApi, type Keyboard } from '../../../shared/telegram';
+import { TelegramService, BotApi, type Keyboard } from '../../../integrations/telegram';
 import { ExpenseBotService } from '../../expense-bot';
 import { UserRepository } from '../../../entities/user';
 import { SecurityLogService } from '../../../shared/log';

@@ -19,7 +19,7 @@ import type { CookieOptions, Request, Response } from 'express';
 import type { ValidatedEnv } from '../../../shared/config/env.types';
 import type { AuthUserPayload } from '../../../shared/auth/session.types';
 import { JwtAuthGuard } from '../../../shared/auth';
-import { TelegramService } from '../../../shared/telegram';
+import { TelegramService } from '../../../integrations/telegram';
 import { RateLimit, RateLimitGuard, clientIp, describeClient } from '../../../shared/http';
 import { SecurityLogService } from '../../../shared/log';
 import { NonceRepository, HandoffRepository } from '../../../entities/login-session';

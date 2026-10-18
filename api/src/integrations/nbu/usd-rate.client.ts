@@ -8,8 +8,8 @@ const TIMEOUT_MS = 5_000;
 const FIRST_WAIT_MS = 1_000;
 
 @Injectable()
-export class UsdRateService {
-  private readonly logger = new Logger(UsdRateService.name);
+export class UsdRateClient {
+  private readonly logger = new Logger(UsdRateClient.name);
   private cached: { value: number; at: number } | null = null;
   private lastFailureAt: number | null = null;
   private inflight: Promise<number | null> | null = null;

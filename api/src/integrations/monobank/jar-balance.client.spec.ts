@@ -1,12 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { FundRepository } from './fund.repository';
-import { JarBalanceService } from './jar-balance.service';
+import { JarBalanceClient } from './jar-balance.client';
 
-const fund = { getMeta: () => 'https://send.monobank.ua/jar/8wj2DmvhZw' } as unknown as FundRepository;
+const JAR_URL = 'https://send.monobank.ua/jar/8wj2DmvhZw';
 
 const ok = (body: unknown) => ({ ok: true, status: 200, json: async () => body });
 
-describe('JarBalanceService', () => {
+describe('JarBalanceClient', () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -20,31 +19,31 @@ describe('JarBalanceService', () => {
     const fetchMock = vi.fn().mockResolvedValue(ok({ jarAmount: 3161262, name: 'На спорядження' }));
     vi.stubGlobal('fetch', fetchMock);
 
-    expect(await new JarBalanceService(fund).get()).toEqual({ amount: 31612.62, name: 'На спорядження' });
+    expect(await new JarBalanceClient().get(JAR_URL)).toEqual({ amount: 31612.62, name: 'На спорядження' });
     expect(JSON.parse(fetchMock.mock.calls[0][1].body).clientId).toBe('8wj2DmvhZw');
   });
 
   it('serves from cache within the TTL and refetches after it', async () => {
     const fetchMock = vi.fn().mockResolvedValue(ok({ jarAmount: 100 }));
     vi.stubGlobal('fetch', fetchMock);
-    const service = new JarBalanceService(fund);
+    const service = new JarBalanceClient();
 
-    await service.get();
+    await service.get(JAR_URL);
     vi.advanceTimersByTime(14_000);
-    await service.get();
+    await service.get(JAR_URL);
     expect(fetchMock).toHaveBeenCalledTimes(1);
 
     vi.advanceTimersByTime(2_000);
-    await service.get();
+    await service.get(JAR_URL);
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it('shares one in-flight request between concurrent callers', async () => {
     const fetchMock = vi.fn().mockResolvedValue(ok({ jarAmount: 100 }));
     vi.stubGlobal('fetch', fetchMock);
-    const service = new JarBalanceService(fund);
+    const service = new JarBalanceClient();
 
-    await Promise.all([service.get(), service.get()]);
+    await Promise.all([service.get(JAR_URL), service.get(JAR_URL)]);
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
@@ -54,29 +53,29 @@ describe('JarBalanceService', () => {
       .mockResolvedValueOnce(ok({ jarAmount: 500 }))
       .mockRejectedValueOnce(new Error('network'));
     vi.stubGlobal('fetch', fetchMock);
-    const service = new JarBalanceService(fund);
+    const service = new JarBalanceClient();
 
-    await service.get();
+    await service.get(JAR_URL);
     vi.advanceTimersByTime(61_000);
-    expect(await service.get()).toEqual({ amount: 5, name: null });
+    expect(await service.get(JAR_URL)).toEqual({ amount: 5, name: null });
   });
 
   it('returns nulls when it never succeeded, including on a malformed response', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(ok({ jarAmount: 'x' })));
 
-    expect(await new JarBalanceService(fund).get()).toEqual({ amount: null, name: null });
+    expect(await new JarBalanceClient().get(JAR_URL)).toEqual({ amount: null, name: null });
   });
 
   it('returns nulls on a non-ok status', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 429, json: async () => ({}) }));
 
-    expect(await new JarBalanceService(fund).get()).toEqual({ amount: null, name: null });
+    expect(await new JarBalanceClient().get(JAR_URL)).toEqual({ amount: null, name: null });
   });
 
   it('returns nulls when fetch rejects and nothing is cached', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network')));
 
-    expect(await new JarBalanceService(fund).get()).toEqual({ amount: null, name: null });
+    expect(await new JarBalanceClient().get(JAR_URL)).toEqual({ amount: null, name: null });
   });
 
   it('does not hammer upstream after a failure past the TTL', async () => {
@@ -85,12 +84,12 @@ describe('JarBalanceService', () => {
       .mockResolvedValueOnce(ok({ jarAmount: 500 }))
       .mockRejectedValue(new Error('down'));
     vi.stubGlobal('fetch', fetchMock);
-    const service = new JarBalanceService(fund);
+    const service = new JarBalanceClient();
 
-    await service.get();
+    await service.get(JAR_URL);
     vi.advanceTimersByTime(61_000);
-    await service.get();
-    await service.get();
+    await service.get(JAR_URL);
+    await service.get(JAR_URL);
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
@@ -100,11 +99,11 @@ describe('JarBalanceService', () => {
       .mockResolvedValueOnce(ok({ jarAmount: 500 }))
       .mockRejectedValue(new Error('down'));
     vi.stubGlobal('fetch', fetchMock);
-    const service = new JarBalanceService(fund);
+    const service = new JarBalanceClient();
 
-    await service.get();
+    await service.get(JAR_URL);
     vi.advanceTimersByTime(16 * 60_000);
-    expect(await service.get()).toEqual({ amount: null, name: null });
+    expect(await service.get(JAR_URL)).toEqual({ amount: null, name: null });
   });
 
   it('retries after the failure window', async () => {
@@ -113,15 +112,15 @@ describe('JarBalanceService', () => {
       .mockRejectedValueOnce(new Error('down'))
       .mockResolvedValue(ok({ jarAmount: 700 }));
     vi.stubGlobal('fetch', fetchMock);
-    const service = new JarBalanceService(fund);
+    const service = new JarBalanceClient();
 
-    await service.get();
+    await service.get(JAR_URL);
     vi.advanceTimersByTime(61_000);
-    expect(await service.get()).toEqual({ amount: 7, name: null });
+    expect(await service.get(JAR_URL)).toEqual({ amount: 7, name: null });
     expect(fetchMock).toHaveBeenCalledTimes(2);
 
     vi.advanceTimersByTime(61_000);
-    await service.get();
+    await service.get(JAR_URL);
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 
@@ -134,6 +133,6 @@ describe('JarBalanceService', () => {
   ])('normalizes jar name %j to %j', async (name, expected) => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(ok({ jarAmount: 100, name })));
 
-    expect((await new JarBalanceService(fund).get()).name).toBe(expected);
+    expect((await new JarBalanceClient().get(JAR_URL)).name).toBe(expected);
   });
 });

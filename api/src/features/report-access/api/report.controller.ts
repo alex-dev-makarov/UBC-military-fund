@@ -6,7 +6,9 @@ import { JwtAuthGuard } from '../../../shared/auth';
 import { RateLimit, RateLimitGuard, clientIp } from '../../../shared/http';
 import { SecurityLogService } from '../../../shared/log';
 import { ChannelMemberGuard, SessionValidGuard } from '../../../entities/user';
-import { FundRepository, JarBalanceService, UsdRateService, type JarBalance, type PublicFund } from '../../../entities/fund';
+import { FundRepository, type PublicFund } from '../../../entities/fund';
+import { JarBalanceClient, type JarBalance } from '../../../integrations/monobank';
+import { UsdRateClient } from '../../../integrations/nbu';
 import { LedgerRepository, ViewLogRepository, type PrivateReportView } from '../../../entities/report';
 
 @Controller('report')
@@ -14,8 +16,8 @@ export class ReportController {
   constructor(
     private readonly securityLog: SecurityLogService,
     private readonly fund: FundRepository,
-    private readonly jar: JarBalanceService,
-    private readonly usd: UsdRateService,
+    private readonly jar: JarBalanceClient,
+    private readonly usd: UsdRateClient,
     private readonly ledger: LedgerRepository,
     private readonly views: ViewLogRepository,
     private readonly config: ConfigService<ValidatedEnv, true>,
@@ -32,7 +34,7 @@ export class ReportController {
   @UseGuards(RateLimitGuard)
   @RateLimit(120, 60_000)
   getJarBalance(): Promise<JarBalance> {
-    return this.jar.get();
+    return this.jar.get(this.fund.getMeta('jarUrl'));
   }
 
   @Get('rate')
