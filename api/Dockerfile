@@ -39,9 +39,6 @@ COPY --from=build /out/dist ./dist
 COPY --from=build /repo/api/migrations ./migrations
 
 
-COPY --from=build /repo/api/scripts ./scripts
-
-
 RUN mkdir -p /app/data && chown -R node:node /app/data
 
 

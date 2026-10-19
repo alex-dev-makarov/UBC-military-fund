@@ -5,8 +5,8 @@ import { VALIDATED_ENV_KEYS } from '../infra/config/env';
 /**
  * Loads env files the way ConfigModule does (first file wins, shell variables are never overridden),
  * but only keys validate() reads — unvalidated keys in the files must not reach the CLI process.
- * The CLI guards run before AppModule is created, so they need the same view of APP_ENV that the
- * old private.mjs got after AppModule loaded.
+ * The CLI guards run before AppModule is created, so they need the same view of APP_ENV that
+ * AppModule gets after loading.
  */
 export function loadEnvFiles(paths: readonly string[]): void {
   for (const path of paths) {
