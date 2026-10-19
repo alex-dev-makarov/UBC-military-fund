@@ -20,7 +20,6 @@ export type BotPickResult =
   | { kind: 'wrong' }
   | { kind: 'ok'; client: string | null; link: string };
 
-/** Auth-domain logic for the Telegram bot login flow: nonces, handoffs, membership and security-log records. */
 @Injectable()
 export class BotLoginService {
   constructor(
