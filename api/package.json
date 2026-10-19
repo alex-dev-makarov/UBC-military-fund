@@ -13,7 +13,7 @@
     "smoke": "node scripts/smoke.mjs",
     "test:watch": "vitest",
     "test:all": "pnpm build && pnpm test && pnpm smoke",
-    "db:seed": "node scripts/seed.mjs",
+    "db:seed": "node dist/cli/main fund:seed",
     "cli": "node dist/cli/main"
   },
   "dependencies": {
