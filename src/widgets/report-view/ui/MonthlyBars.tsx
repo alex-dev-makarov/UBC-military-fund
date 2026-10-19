@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useI18n } from '@shared/i18n'
-import { locales } from '@shared/i18n'
 
 export interface MonthTotal {
   month: number
@@ -37,12 +36,11 @@ export function MonthlyBars({
   selected: number | null
   onSelect: (month: number | null) => void
 }) {
-  const { t, fmt, lang } = useI18n()
+  const { t, fmt } = useI18n()
   const [hovered, setHovered] = useState<number | null>(null)
   const selectedIndex = months.findIndex((m) => m.month === selected)
   const active = hovered ?? (selectedIndex >= 0 ? selectedIndex : null)
 
-  const compact = new Intl.NumberFormat(locales[lang], { notation: 'compact', maximumFractionDigits: 0 })
   const peak = Math.max(0, ...months.map((m) => m.total))
   const step = niceStep(peak)
   const top = step * 2
@@ -61,7 +59,7 @@ export function MonthlyBars({
             <g key={tick}>
               <line x1={LEFT} x2={WIDTH} y1={toY(tick)} y2={toY(tick)} stroke="var(--color-line)" strokeWidth="1" />
               <text x={LEFT - 6} y={toY(tick) + 3} textAnchor="end" className="fill-ink-3 text-[8px]">
-                {tick === 0 ? '0' : compact.format(tick)}
+                {tick === 0 ? '0' : fmt.compact(tick)}
               </text>
             </g>
           ))}

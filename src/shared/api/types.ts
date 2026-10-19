@@ -75,13 +75,11 @@ export interface LedgerPerson {
   count: number
 }
 
-export interface ReportViewer {
-  telegramId: number
-  viewedAt: string
-}
-
 export interface PrivateReport {
-  viewer: ReportViewer
+  viewer: {
+    telegramId: number
+    viewedAt: string
+  }
   generatedAt: string | null
   total: number
   years: LedgerYear[]

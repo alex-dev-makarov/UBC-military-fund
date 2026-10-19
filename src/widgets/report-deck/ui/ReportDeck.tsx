@@ -2,9 +2,10 @@ import camo from '@assets/camo.svg'
 import { categoriesTotal, totalSpent } from '@entities/spend'
 import { LangSwitch } from '@features/switch-lang'
 import { useFund } from '@entities/fund'
+import { useUsdRate } from '@entities/usd-rate'
 import { useI18n, type Fmt, type Translate } from '@shared/i18n'
 import type { PublicFund } from '@shared/api'
-import { useCarousel } from '@shared/lib'
+import { pct, useCarousel } from '@shared/lib'
 import { UsdHint } from '@shared/ui'
 
 interface Slide {
@@ -36,7 +37,7 @@ function buildSlides(
       usd: total,
       caption: t('deck.total.caption'),
       bars: fund.categories.map((category) => ({
-        width: `${((category.amount / catTotal) * 100).toFixed(2)}%`,
+        width: pct(category.amount, catTotal),
         color: category.color,
       })),
     },
@@ -53,7 +54,7 @@ function buildSlides(
       usd: category.amount,
       caption: t('deck.category.caption', { share: fmt.share(category.amount, catTotal) }),
       swatch: category.color,
-      bars: [{ width: `${((category.amount / catTotal) * 100).toFixed(2)}%`, color: category.color }],
+      bars: [{ width: pct(category.amount, catTotal), color: category.color }],
     })),
   ]
 
@@ -63,6 +64,7 @@ function buildSlides(
 export function ReportDeck() {
   const { t, fmt, pick } = useI18n()
   const fund = useFund()
+  const rate = useUsdRate()
   const slides = buildSlides(fund, t, fmt, pick)
   const { index, drag, select, handlers } = useCarousel({ count: slides.length })
 
@@ -101,7 +103,7 @@ export function ReportDeck() {
                 {slide.value}
               </span>
               {slide.usd !== undefined && (
-                <UsdHint uah={slide.usd} block className="-mt-0.5 mb-1 text-white/70" />
+                <UsdHint uah={slide.usd} block className="-mt-0.5 mb-1 text-white/70" rate={rate} />
               )}
 
               {slide.caption && <p className="text-[12.5px] text-white/75">{slide.caption}</p>}

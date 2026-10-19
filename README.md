@@ -35,6 +35,21 @@ pnpm dev                          # фронт на http://localhost:5173
 3. Після злиття в `main` деплой на prod чекає підтвердження власника (GitHub → Actions →
    Review deployments). Доступ до сервера для цього не потрібен.
 
+## Архітектура
+
+Фронтенд (`src/`, RTK Query) → бекенд (`api/`) → SQLite.
+
+`api/src`:
+- `modules/<domain>` — контролер → сервіс → репозиторій (`fund`, `ledger`, `report`, `auth`, `user`, …).
+- `integrations/` — monobank, nbu, telegram, google; лише тут зовнішні HTTP-виклики.
+- `infra/` — db, config, http, auth, health.
+- `app/` — кореневий модуль.
+
+Правила:
+- контролери викликають лише сервіси;
+- лише `*.repository.ts` і `infra/db` виконують SQL (`database.connection.prepare`);
+- зовнішні API — лише через `integrations/`.
+
 ## Деплой
 
 Усе робить GitHub Actions (`.github/workflows/deploy.yml`) після пушу в `main`:

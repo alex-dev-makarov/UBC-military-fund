@@ -10,6 +10,7 @@ import {
   YearBars,
 } from '@entities/spend'
 import { useFund } from '@entities/fund'
+import { useUsdRate } from '@entities/usd-rate'
 import { useI18n } from '@shared/i18n'
 import { Card, UsdHint } from '@shared/ui'
 
@@ -24,6 +25,7 @@ const NoteText = ({ children }: { children: string }) => (
 export function PublicReport() {
   const { t, fmt } = useI18n()
   const fund = useFund()
+  const rate = useUsdRate()
   const total = totalSpent(fund)
   const catTotal = categoriesTotal(fund)
   const [peakIndex, peakValue] = peakMonth(fund)
@@ -38,15 +40,15 @@ export function PublicReport() {
       <span className="num block text-[clamp(26px,7.4vw,33px)] font-extrabold leading-none tracking-[-.03em]">
         {fmt.uahExact(total)}
       </span>
-      <UsdHint uah={total} block className="mt-1 text-ink-3" />
-      <YearBars years={fund.years} />
+      <UsdHint uah={total} block className="mt-1 text-ink-3" rate={rate} />
+      <YearBars years={fund.years} rate={rate} />
     </Card>
 
     <Heading>{t('report.h.categories')}</Heading>
     <Card>
       <SpendDonut categories={fund.categories} total={catTotal} />
       <div className="mt-4 border-t border-line pt-1">
-        <CategoryBars categories={fund.categories} total={catTotal} />
+        <CategoryBars categories={fund.categories} total={catTotal} rate={rate} />
       </div>
       <NoteText>{t('report.note.categories')}</NoteText>
     </Card>
@@ -64,7 +66,7 @@ export function PublicReport() {
 
     <Heading>{t('report.h.recent')}</Heading>
     <Card>
-      <RecentList items={latestSpends(fund)} />
+      <RecentList items={latestSpends(fund)} rate={rate} />
       <NoteText>{t('report.note.recent')}</NoteText>
     </Card>
 

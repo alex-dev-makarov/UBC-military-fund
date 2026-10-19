@@ -4,9 +4,11 @@ import { ConfigService } from '@nestjs/config';
 import * as cookieParser from 'cookie-parser';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule, type ValidatedEnv } from './app';
-import { securityHeaders } from './shared/http';
+import { securityHeaders } from './infra/http';
 
 async function bootstrap() {
+  // Read-only mode is CLI-only; a stray inherited value must not make the server DB read-only.
+  delete process.env.DB_READONLY;
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.disable('x-powered-by');
 

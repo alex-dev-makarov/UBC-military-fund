@@ -1,12 +1,20 @@
 import { useEffect, useState } from 'react'
 import type { SpendCategory } from '@shared/api'
 import { useI18n } from '@shared/i18n'
-import { UsdHint, useUsdRate } from '@shared/ui'
+import { pct } from '@shared/lib'
+import { UsdHint } from '@shared/ui'
 
-export function CategoryBars({ categories, total }: { categories: SpendCategory[]; total: number }) {
+export function CategoryBars({
+  categories,
+  total,
+  rate,
+}: {
+  categories: SpendCategory[]
+  total: number
+  rate: number | null
+}) {
   const [filled, setFilled] = useState(false)
   const { fmt, pick } = useI18n()
-  const rate = useUsdRate()
 
   useEffect(() => {
     const id = setTimeout(() => setFilled(true), 60)
@@ -36,7 +44,7 @@ export function CategoryBars({ categories, total }: { categories: SpendCategory[
             <i
               className="block h-full rounded-[5px] transition-[width] duration-700 ease-[cubic-bezier(.2,.8,.3,1)]"
               style={{
-                width: filled ? `${((category.amount / total) * 100).toFixed(2)}%` : '0%',
+                width: filled ? pct(category.amount, total) : '0%',
                 background: category.color,
                 transitionDelay: `${position * 70}ms`,
               }}

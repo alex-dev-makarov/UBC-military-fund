@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router'
-import { DENIED_PATH, HANDOFF_PARAM, MEMBERS_PATH, TelegramLoginButton, useTelegramAuth } from '@features/auth-telegram'
-import { useHandoffTelegramMutation, useLogoutMutation, getFetchErrorStatus } from '@shared/api'
+import { DENIED_PATH, HANDOFF_PARAM, HANDOFF_PATH, MEMBERS_PATH, TelegramLoginButton, useTelegramAuth } from '@features/auth-telegram'
+import { useLogoutMutation } from '@shared/api'
 import { useI18n } from '@shared/i18n'
 import { BackButton, Card, Crumb, Screen } from '@shared/ui'
 import { PrivateReport } from '@widgets/report-view'
@@ -14,42 +14,41 @@ const Message = ({ title, text }: { title: string; text: string }) => (
 )
 
 export function SecretPage() {
+  const { hash } = useLocation()
+  // Old bot links carry the token here; forward them to the callback route, which redeems it.
+  // Done before SecretContent mounts, so no /auth/me request (and cached 401) is made first.
+  if (new URLSearchParams(hash.slice(1)).has(HANDOFF_PARAM)) return <LegacyForward hash={hash} />
+  return <SecretContent />
+}
+
+function LegacyForward({ hash }: { hash: string }) {
+  const { t } = useI18n()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    navigate(HANDOFF_PATH + hash, { replace: true })
+  }, [hash, navigate])
+
+  return (
+    <Screen bank="report">
+      <Card>
+        <p className="text-[12.5px] text-ink-3">{t('private.checking')}</p>
+      </Card>
+    </Screen>
+  )
+}
+
+function SecretContent() {
   const { t } = useI18n()
   const navigate = useNavigate()
   const { status, adopt, recheck } = useTelegramAuth()
-  const { hash, pathname } = useLocation()
-  const handoff = new URLSearchParams(hash.slice(1)).get(HANDOFF_PARAM)
-  const [redeeming, setRedeeming] = useState(() => handoff !== null)
 
-  const [handoffTelegram] = useHandoffTelegramMutation()
   const [logout, { isLoading: loggingOut }] = useLogoutMutation()
 
   const signOut = () => {
     void logout().finally(() => window.location.replace(MEMBERS_PATH))
   }
-  const redeemed = useRef(false)
 
-  useEffect(() => {
-    if (!handoff || redeemed.current) return
-    redeemed.current = true
-
-    void handoffTelegram({ token: handoff })
-      .then((result) => {
-        if ('data' in result && result.data?.user) {
-          adopt(result.data.user)
-        } else if ('error' in result) {
-          const errorStatus = getFetchErrorStatus(result.error)
-          if (errorStatus !== 403) recheck()
-        }
-      })
-      .finally(() => {
-        setRedeeming(false)
-        navigate(pathname, { replace: true })
-      })
-  }, [handoff, pathname, adopt, recheck, navigate, handoffTelegram])
-
-  
-  
   useEffect(() => {
     if (status === 'denied') navigate(DENIED_PATH, { replace: true })
   }, [status, navigate])
@@ -71,7 +70,7 @@ export function SecretPage() {
       </div>
       <Crumb mark={<span aria-hidden>🔒</span>} title={t('secret.title')} />
 
-      {(redeeming || status === 'checking') && (
+      {status === 'checking' && (
         <Card>
           <p className="text-[12.5px] text-ink-3">{t('private.checking')}</p>
         </Card>

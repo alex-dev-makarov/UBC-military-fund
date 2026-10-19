@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { totalSpent } from '@entities/spend'
 import { useDonationBoost, useFund } from '@entities/fund'
 import { useGetJarBalanceQuery } from '@shared/api'
-import { UsdHint, useUsdRate } from '@shared/ui'
+import { useUsdRate } from '@entities/usd-rate'
+import { UsdHint } from '@shared/ui'
 import { Rich, useI18n } from '@shared/i18n'
 
 const POLL_MS = 60_000
