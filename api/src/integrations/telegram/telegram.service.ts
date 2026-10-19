@@ -26,11 +26,7 @@ export class TelegramService {
     return this.botUsername;
   }
 
-  /**
-   * Looks up one chat member for the CLI. Resolves to Telegram's `result`, or null when the
-   * envelope carries none (unknown user, bad token). Rejects on network failure, timeout or an
-   * unparseable body, so callers can tell "unknown" apart from "Telegram unreachable".
-   */
+
   async getChatMember(
     userId: number,
     chatId: number | string,

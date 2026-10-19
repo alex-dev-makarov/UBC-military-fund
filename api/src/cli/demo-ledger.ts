@@ -1,6 +1,5 @@
 import type { LedgerImport } from '../modules/ledger';
 
-/** Fictional dataset for `ledger:demo` (local/dev only). Moved verbatim from scripts/private.mjs. */
 export const DEMO_LEDGER: LedgerImport = {
   generatedAt: '2026-10-01',
   years: [
