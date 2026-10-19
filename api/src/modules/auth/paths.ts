@@ -1,2 +1,2 @@
-export const SECRET_PATH = '/members-details-ubc/secret';
+export const HANDOFF_PATH = '/auth/telegram';
 export const HANDOFF_PARAM = 't';

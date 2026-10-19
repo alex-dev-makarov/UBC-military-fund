@@ -120,7 +120,7 @@ describe('BotUpdatesService dispatch', () => {
     });
 
     it('puts an https link on a button', async () => {
-      const link = 'https://site.example/members-details-ubc/secret#t=abc';
+      const link = 'https://site.example/auth/telegram#t=abc';
       auth.pick.mockReturnValue({ kind: 'ok', client: 'Safari', link });
       await dispatch.handleCallback(callback(`c:${NONCE}:01`));
       const [, text, keyboard] = bot.edit.mock.calls[0]!;
@@ -130,7 +130,7 @@ describe('BotUpdatesService dispatch', () => {
     });
 
     it('puts a non-https link in the text instead of a button', async () => {
-      const link = 'http://localhost:3000/members-details-ubc/secret#t=abc';
+      const link = 'http://localhost:3000/auth/telegram#t=abc';
       auth.pick.mockReturnValue({ kind: 'ok', client: null, link });
       await dispatch.handleCallback(callback(`c:${NONCE}:01`));
       const [, text, keyboard] = bot.edit.mock.calls[0]!;

@@ -1,5 +1,10 @@
+import type { ThunkDispatch, UnknownAction } from '@reduxjs/toolkit'
+import { useCallback } from 'react'
+import { useDispatch } from 'react-redux'
 import { api } from './baseApi'
 import type { AuthUser, JarBalance, PrivateReport, PublicFund, UsdRate } from './types'
+
+type ApiState = { [api.reducerPath]: ReturnType<typeof api.reducer> }
 
 interface PollResponse {
   status: 'pending' | 'authorized' | 'denied' | 'expired'
@@ -39,7 +44,8 @@ const endpoints = api.injectEndpoints({
 
     getAuthMe: build.query<AuthUser, void>({
       query: () => '/auth/me',
-      keepUnusedDataFor: 0,
+      // 1s, not 0: a seeded entry (useSeedAuthUser) must survive until the next page subscribes.
+      keepUnusedDataFor: 1,
       forceRefetch: () => true,
     }),
 
@@ -79,3 +85,12 @@ export const {
   useHandoffTelegramMutation,
   useLogoutMutation,
 } = endpoints
+
+/** Writes the user into the getAuthMe cache (fulfilled, no error); resolves once stored. */
+export function useSeedAuthUser(): (user: AuthUser) => Promise<unknown> {
+  const dispatch = useDispatch<ThunkDispatch<ApiState, unknown, UnknownAction>>()
+  return useCallback(
+    (user) => dispatch(endpoints.util.upsertQueryData('getAuthMe', undefined, user)),
+    [dispatch],
+  )
+}

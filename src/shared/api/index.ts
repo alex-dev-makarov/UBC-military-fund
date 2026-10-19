@@ -10,6 +10,7 @@ export {
   useStartTelegramMutation,
   useHandoffTelegramMutation,
   useLogoutMutation,
+  useSeedAuthUser,
 } from './endpoints'
 export type {
   AuthUser,

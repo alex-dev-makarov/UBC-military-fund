@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { HANDOFF_PARAM, SECRET_PATH } from './paths';
+import { HANDOFF_PARAM, HANDOFF_PATH } from './paths';
 
 // The frontend file (outside api/), which must stay in sync with paths.ts.
 const frontendConstants = readFileSync(
@@ -10,16 +10,13 @@ const frontendConstants = readFileSync(
 );
 
 describe('paths shared with the frontend', () => {
-  it('matches the SECRET_PATH the frontend routes on', () => {
-    expect(frontendConstants).toContain(`export const SECRET_PATH = '${SECRET_PATH}'`);
+  it('matches the HANDOFF_PATH the frontend routes the bot link to', () => {
+    expect(HANDOFF_PATH).toBe('/auth/telegram');
+    expect(frontendConstants).toContain(`export const HANDOFF_PATH = '${HANDOFF_PATH}'`);
   });
 
-  it('matches the HANDOFF_PARAM the frontend reads from the query string', () => {
+  it('matches the HANDOFF_PARAM the frontend reads from the URL fragment', () => {
+    expect(HANDOFF_PARAM).toBe('t');
     expect(frontendConstants).toContain(`export const HANDOFF_PARAM = '${HANDOFF_PARAM}'`);
-  });
-
-  it('nests the secret page under the members entry path', () => {
-    expect(frontendConstants).toContain("export const MEMBERS_PATH = '/members-details-ubc'");
-    expect(SECRET_PATH.startsWith('/members-details-ubc/')).toBe(true);
   });
 });

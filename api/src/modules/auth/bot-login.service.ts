@@ -6,7 +6,7 @@ import { SecurityLogService } from '../security-log';
 import { UserRepository } from '../user';
 import { NonceRepository } from './nonce.repository';
 import { HandoffRepository } from './handoff.repository';
-import { HANDOFF_PARAM, SECRET_PATH } from './paths';
+import { HANDOFF_PARAM, HANDOFF_PATH } from './paths';
 
 export type BotBeginConfirmResult =
   | { kind: 'stale' }
@@ -83,6 +83,6 @@ export class BotLoginService {
     const site: string = origin ?? this.config.get('PUBLIC_SITE_URL', { infer: true });
     const ttlSec = this.config.get('HANDOFF_TTL_SEC', { infer: true });
     const handoff = this.handoffs.create(telegramId, ttlSec * 1000, site);
-    return `${site}${SECRET_PATH}#${HANDOFF_PARAM}=${encodeURIComponent(handoff)}`;
+    return `${site}${HANDOFF_PATH}#${HANDOFF_PARAM}=${encodeURIComponent(handoff)}`;
   }
 }

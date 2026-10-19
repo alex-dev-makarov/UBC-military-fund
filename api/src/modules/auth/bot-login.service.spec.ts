@@ -174,7 +174,7 @@ describe('BotLoginService', () => {
       expect(service.pick(NONCE, TELEGRAM_ID, 2)).toEqual({
         kind: 'ok',
         client: 'Chrome',
-        link: `https://origin.example/members-details-ubc/secret#t=${HANDOFF}`,
+        link: `https://origin.example/auth/telegram#t=${HANDOFF}`,
       });
       expect(handoffs.create).toHaveBeenCalledWith(TELEGRAM_ID, 120_000, 'https://origin.example');
       expect(securityLog.record).not.toHaveBeenCalled();
@@ -187,7 +187,7 @@ describe('BotLoginService', () => {
       expect(service.pick(NONCE, TELEGRAM_ID, 2)).toEqual({
         kind: 'ok',
         client: null,
-        link: 'https://site.example/members-details-ubc/secret#t=a%20b%2Fc',
+        link: 'https://site.example/auth/telegram#t=a%20b%2Fc',
       });
       expect(handoffs.create).toHaveBeenCalledWith(TELEGRAM_ID, 120_000, 'https://site.example');
     });
